@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FOR ME NY — Newsletter Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0F0F0F;
+  --white: #FFFFFF;
+  --off:   #F7F5F1;       /* サイトの背景 — クリーム白 */
+  --light: #EDEAE4;       /* カードの背景 */
+  --mid:   #C4BFB6;       /* ボーダー */
+  --stone: #8A8279;       /* ミュートテキスト */
+  --ink:   #3A3733;       /* 本文テキスト */
+  --gold:  #B89040;       /* サイトのゴールドアクセント */
+  --sage:  #6B7F5E;       /* 自然・緑 */
+  --r: 0px;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans:  'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { font-family: var(--sans); background: var(--off); color: var(--black); -webkit-font-smoothing: antialiased; }
+input, textarea, select, button { font-family: inherit; }
+a { color: var(--gold); }
+
+/* ── Header ── */
+.hdr { background: var(--white); padding: 0 22px; height: 50px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--mid); position: sticky; top: 0; z-index: 200; }
+.hdr-logo { font-family: var(--serif); font-size: 17px; font-weight: 300; letter-spacing: .14em; text-transform: uppercase; }
+.hdr-logo em { font-style: normal; color: var(--stone); }
+.hdr-badge { font-size: 10px; color: var(--stone); border: 1px solid var(--mid); padding: 3px 10px; letter-spacing: .06em; }
+
+/* ── API Banner ── */
+.api-bar { background: var(--light); border-bottom: 1px solid var(--mid); padding: 8px 22px; font-size: 11px; color: var(--stone); }
+.api-bar.ok { background: #EEF3EB; border-color: #A8C49A; color: #3A5C30; }
+.api-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.api-lbl { white-space: nowrap; font-weight: 600; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.api-inp { flex: 1; min-width: 180px; max-width: 300px; padding: 5px 9px; border: 1px solid var(--mid); font-size: 11px; font-family: monospace; background: var(--white); outline: none; color: var(--black); }
+.api-inp.ok { border-color: #A8C49A; }
+
+/* ── Shell ── */
+.shell { display: flex; }
+.stabs { display: none; width: 176px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--mid); flex-direction: column; }
+.st { padding: 13px 18px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--stone); text-align: left; display: flex; align-items: center; gap: 10px; letter-spacing: .07em; text-transform: uppercase; border-left: 2px solid transparent; transition: all .15s; }
+.st:hover { color: var(--black); background: var(--off); }
+.st.on { color: var(--black); background: var(--off); border-left-color: var(--black); }
+.st.done { color: var(--sage); }
+.st.done .st-n { background: var(--sage); }
+.st-n { width: 18px; height: 18px; border-radius: 50%; background: var(--mid); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.st.on .st-n { background: var(--black); }
+
+.pages { flex: 1; overflow: hidden; }
+.page { display: none; height: calc(100vh - 86px); height: calc(100dvh - 86px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.page.on { display: block; }
+
+/* ── Bottom nav ── */
+.bnav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: var(--white); border-top: 1px solid var(--mid); padding: 8px 0 max(10px, env(safe-area-inset-bottom)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.bnav-inner { display: flex; justify-content: space-around; }
+.bn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 8px; cursor: pointer; border: none; background: none; color: var(--stone); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; min-width: 52px; -webkit-tap-highlight-color: transparent; }
+.bn.on { color: var(--black); }
+.bn-ico { font-size: 17px; }
+.bn-bar { width: 18px; height: 1px; background: var(--black); opacity: 0; margin-top: 1px; }
+.bn.on .bn-bar { opacity: 1; }
+
+/* ── Two-col ── */
+.two-col { display: flex; min-height: 100%; }
+.cl { overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+.cl-l { flex: 1; border-right: 1px solid var(--mid); background: var(--white); }
+.cl-r { flex: 1; background: var(--off); }
+.cl-side { width: 264px; flex-shrink: 0; border-left: 1px solid var(--mid); background: var(--white); overflow-y: auto; }
+
+/* ── Type ── */
+.ptitle { font-family: var(--serif); font-size: 21px; font-weight: 300; margin-bottom: 4px; line-height: 1.2; }
+.pdesc { font-size: 11px; color: var(--stone); margin-bottom: 16px; line-height: 1.7; }
+.slbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--stone); margin-bottom: 5px; display: block; }
+.div { height: 1px; background: var(--mid); margin: 13px 0; }
+.fg { margin-bottom: 11px; }
+
+/* ── Controls ── */
+.fi { width: 100%; padding: 8px 11px; border: 1px solid var(--mid); font-size: 16px; background: var(--white); color: var(--black); outline: none; transition: border-color .15s; }
+.fi:focus { border-color: var(--black); }
+.ta { width: 100%; padding: 9px 11px; border: 1px solid var(--mid); font-size: 16px; font-family: var(--serif); background: var(--white); color: var(--black); outline: none; resize: vertical; line-height: 1.75; transition: border-color .15s; }
+.ta:focus { border-color: var(--black); }
+
+/* ── Buttons ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all .15s; white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+.btn-blk { background: var(--black); color: var(--white); border-color: var(--black); }
+.btn-blk:hover:not(:disabled) { background: #333; }
+.btn-blk:disabled { background: var(--mid); border-color: var(--mid); cursor: not-allowed; }
+.btn-out { background: transparent; color: var(--black); border-color: var(--mid); }
+.btn-out:hover:not(:disabled) { border-color: var(--black); }
+.btn-sm { padding: 5px 11px; font-size: 10px; }
+.btn-full { width: 100%; }
+
+/* ── Topic cards ── */
+.tc { background: var(--white); border: 1px solid var(--mid); padding: 12px 13px; cursor: pointer; margin-bottom: 6px; transition: all .15s; position: relative; -webkit-tap-highlight-color: transparent; }
+.tc:hover { border-color: var(--black); }
+.tc.on { border-color: var(--black); background: var(--off); }
+.tc-top { display: flex; gap: 9px; margin-bottom: 3px; }
+.tc-num { font-family: var(--serif); font-size: 16px; color: var(--stone); font-weight: 300; flex-shrink: 0; line-height: 1.1; }
+.tc-title { font-size: 12px; font-weight: 600; line-height: 1.4; }
+.tc-src { font-size: 10px; color: var(--stone); margin: 2px 0 3px 25px; }
+.tc-sum { font-size: 11px; color: var(--stone); line-height: 1.55; margin-left: 25px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tc-tag { display: inline-block; padding: 2px 7px; border: 1px solid var(--mid); font-size: 9px; color: var(--stone); margin-left: 25px; margin-top: 4px; letter-spacing: .05em; text-transform: uppercase; }
+.tc-chk { position: absolute; top: 9px; right: 9px; width: 17px; height: 17px; border-radius: 50%; background: var(--black); color: var(--white); display: none; align-items: center; justify-content: center; font-size: 9px; }
+.tc.on .tc-chk { display: flex; }
+
+/* ── Research pagination ── */
+.research-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--mid); }
+.page-info { font-size: 11px; color: var(--stone); }
+.research-loading { display: none; text-align: center; padding: 24px; color: var(--stone); font-size: 12px; }
+
+/* ── Status ── */
+.gst { display: none; align-items: center; gap: 9px; padding: 11px 13px; margin-bottom: 12px; font-size: 12px; border: 1px solid var(--mid); }
+.gst.show { display: flex; }
+.gst.run { background: var(--light); color: var(--ink); }
+.gst.ok { background: #EEF3EB; border-color: #A8C49A; color: #2D5028; }
+.gst.err { background: #FDF0EE; border-color: #E0B8B0; color: #8B2A1A; }
+.spin { width: 15px; height: 15px; border: 1.5px solid var(--mid); border-top-color: var(--black); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Article sections ── */
+.asec { background: var(--white); border: 1px solid var(--mid); overflow: hidden; margin-bottom: 10px; }
+.asec-hd { padding: 8px 12px; background: var(--light); border-bottom: 1px solid var(--mid); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px; }
+.asec-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--stone); }
+.asec-body { padding: 11px 12px; }
+.asec-body .ta { border: none; background: transparent; padding: 0; }
+.asec-body .fi { border: none; background: transparent; padding: 0; font-size: 14px; font-family: var(--serif); }
+
+/* ── AI adjust panel ── */
+.ai-adjust {
+  background: var(--off); border: 1px solid var(--mid);
+  margin-top: 8px; overflow: hidden;
+  transition: all .2s;
+}
+.ai-adjust-hd {
+  padding: 7px 11px; background: var(--light); border-bottom: 1px solid var(--mid);
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--stone); display: flex; align-items: center; gap: 6px;
+}
+.ai-adjust-body { padding: 10px 11px; display: flex; flex-direction: column; gap: 7px; }
+.adjust-input { width: 100%; padding: 7px 10px; border: 1px solid var(--mid); font-size: 12px; background: var(--white); color: var(--black); outline: none; resize: none; line-height: 1.5; }
+.adjust-input:focus { border-color: var(--black); }
+.adjust-hint { font-size: 10px; color: var(--stone); line-height: 1.5; }
+
+/* ── Selected ── */
+.sel-card { background: var(--white); border: 1px solid var(--black); padding: 12px; margin-bottom: 7px; }
+.sel-title { font-family: var(--serif); font-size: 13px; margin-bottom: 4px; line-height: 1.35; font-weight: 400; }
+.sel-sum { font-size: 11px; color: var(--stone); line-height: 1.55; margin-bottom: 5px; }
+
+/* ── Preview pane ── */
+.preview-bg { background: #E2DFD8; }
+.nl-wrap { max-width: 540px; margin: 0 auto; background: var(--white); border: 1px solid var(--mid); box-shadow: 0 2px 16px rgba(0,0,0,.08); font-family: var(--sans); }
+.nl-header-zone { width: 100%; }
+.nl-body { padding: 30px 34px; }
+.nl-overline { font-size: 9px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--stone); margin-bottom: 11px; }
+.nl-title { font-family: var(--serif); font-size: 27px; font-weight: 300; line-height: 1.18; margin-bottom: 7px; }
+.nl-sub { font-size: 12px; color: var(--stone); font-weight: 300; margin-bottom: 20px; line-height: 1.55; border-bottom: 1px solid var(--mid); padding-bottom: 17px; }
+.nl-lead { font-size: 13px; line-height: 1.85; margin-bottom: 20px; color: var(--ink); padding-left: 15px; border-left: 2px solid var(--black); }
+.nl-visual-zone { margin: 0 0 22px; }
+.nl-section-lbl { font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--stone); margin-bottom: 9px; }
+.nl-text { font-size: 13px; line-height: 1.88; color: var(--ink); }
+.nl-text p { margin-bottom: 9px; }
+.nl-rule { height: 1px; background: var(--mid); margin: 22px 0; }
+.nl-pullquote { padding: 16px 18px; border-left: 2px solid var(--gold); background: var(--off); margin: 20px 0; }
+.nl-pullquote p { font-family: var(--serif); font-size: 16px; font-style: italic; font-weight: 300; line-height: 1.55; color: var(--black); }
+.nl-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; }
+.nl-tag { padding: 2px 8px; border: 1px solid var(--mid); font-size: 9px; color: var(--stone); letter-spacing: .07em; text-transform: uppercase; }
+.nl-footer { padding: 13px 34px; border-top: 1px solid var(--mid); display: flex; align-items: center; justify-content: space-between; background: var(--off); }
+.nl-footer-logo { font-family: var(--serif); font-size: 13px; font-weight: 300; letter-spacing: .12em; text-transform: uppercase; }
+.nl-footer-logo em { font-style: normal; color: var(--stone); }
+
+/* ── Visual panel ── */
+.vp { padding: 17px; }
+.vp-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--stone); margin-bottom: 9px; }
+
+/* Header template grid */
+.tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tpl-opt { border: 1px solid var(--mid); cursor: pointer; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.tpl-opt:hover, .tpl-opt.on { border-color: var(--black); }
+.tpl-opt.on { outline: 2px solid var(--black); }
+.tpl-thumb { width: 100%; display: block; background: var(--light); height: 46px; overflow: hidden; }
+.tpl-name { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; background: var(--white); color: var(--stone); display: block; }
+.tpl-opt.on .tpl-name { color: var(--black); }
+
+/* Color palette — FOR ME NY準拠 12色 */
+.palette-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.pal { width: 100%; aspect-ratio: 1; cursor: pointer; border: 2px solid transparent; transition: all .13s; position: relative; }
+.pal.on { border-color: var(--black); transform: scale(1.12); }
+.pal.on::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.pal-label { font-size: 8px; text-align: center; color: var(--stone); margin-top: 3px; line-height: 1.2; }
+
+/* Visual generation */
+.vis-gen-btn { background: var(--off); border: 1px dashed var(--mid); padding: 14px; text-align: center; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.vis-gen-btn:hover { background: var(--light); border-color: var(--black); }
+.vis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.vis-card { border: 1px solid var(--mid); cursor: pointer; transition: all .13s; overflow: hidden; }
+.vis-card:hover, .vis-card.on { border-color: var(--black); }
+.vis-card.on { outline: 2px solid var(--black); }
+.vis-thumb { height: 72px; width: 100%; display: block; background: var(--light); overflow: hidden; }
+.vis-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; color: var(--stone); display: block; }
+.vis-card.on .vis-label { color: var(--black); }
+
+/* ── Visual adjust ── */
+.vis-adjust {
+  background: var(--off); border: 1px solid var(--mid);
+  margin-top: 8px; padding: 10px 11px;
+  display: none; flex-direction: column; gap: 7px;
+}
+.vis-adjust.show { display: flex; }
+.vis-adjust-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--stone); }
+.vis-adjust-hint { font-size: 10px; color: var(--stone); line-height: 1.5; }
+.vis-adjust-input { width: 100%; padding: 7px 10px; border: 1px solid var(--mid); font-size: 12px; background: var(--white); color: var(--black); outline: none; resize: none; line-height: 1.5; }
+.vis-adjust-input:focus { border-color: var(--black); }
+
+/* Tag chips */
+.tag-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag-chip { padding: 3px 9px; border: 1px solid var(--mid); font-size: 9px; color: var(--stone); cursor: pointer; letter-spacing: .06em; text-transform: uppercase; transition: all .13s; }
+.tag-chip.on { border-color: var(--black); color: var(--black); }
+
+/* ── Publish ── */
+.pub-pg { padding: 22px 20px; max-width: 620px; margin: 0 auto; }
+.ci { display: flex; align-items: center; gap: 10px; padding: 11px 13px; margin-bottom: 7px; border: 1px solid var(--mid); }
+.ci.done { background: #EEF3EB; border-color: #A8C49A; }
+.ci-c { width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--white); flex-shrink: 0; }
+.ci.done .ci-c { background: var(--sage); }
+.ci.pend .ci-c { background: var(--mid); }
+.ci-l { font-size: 12px; font-weight: 600; }
+.ci-s { font-size: 10px; color: var(--stone); }
+.pre-blk { background: var(--black); color: var(--white); padding: 13px 14px; font-size: 10px; font-family: monospace; line-height: 1.7; white-space: pre-wrap; max-height: 240px; overflow-y: auto; position: relative; margin-top: 7px; }
+.cpy-btn { position: sticky; top: 0; float: right; padding: 3px 9px; background: var(--gold); color: var(--white); border: none; font-size: 10px; cursor: pointer; font-family: var(--sans); font-weight: 600; }
+
+.empty { text-align: center; padding: 40px 16px; color: var(--stone); font-size: 12px; }
+
+/* ── Responsive ── */
+@media(max-width: 767px) {
+  .bnav { display: block; }
+  .shell, .pages, .page { height: calc(100vh - 86px - 56px); height: calc(100dvh - 86px - 56px); }
+  .two-col { flex-direction: column; min-height: auto; }
+  .cl { width: 100% !important; }
+  .cl-l { border-right: none; border-bottom: 1px solid var(--mid); }
+  .cl-side { width: 100%; border-left: none; border-top: 1px solid var(--mid); }
+  #page3 .two-col { flex-direction: column-reverse; }
+  /* iPhone: フォームズーム防止 */
+  input[type="text"], input[type="password"], input[type="month"],
+  textarea, select { font-size: 16px !important; }
+  /* iPhone: タップ時のハイライト除去 */
+  .tc, .tag-chip, .pal, .tpl-opt, .vis-card, .photo-style-opt { -webkit-tap-highlight-color: transparent; }
+  /* iPhone: スクロールの慣性 */
+  .cl { -webkit-overflow-scrolling: touch; }
+  /* ヘッダー・APIバーを小さく */
+  .hdr { height: 44px; padding: 0 14px; }
+  .api-bar { padding: 6px 14px; }
+  .api-inp { font-size: 14px; }
+  /* ボトムナビのアイコンを少し大きく */
+  .bn-ico { font-size: 20px; }
+  .bn { font-size: 10px; min-width: 48px; }
+  /* セクションのパディングを減らす */
+  .cl { padding: 14px; }
+}
+@media(min-width: 768px) and (max-width: 1023px) {
+  .stabs { display: flex; width: 148px; }
+  .st { font-size: 10px; padding: 11px 13px; }
+  .shell, .pages, .page { height: calc(100vh - 86px); height: calc(100dvh - 86px); }
+  .cl-side { width: 224px; }
+}
+@media(min-width: 1024px) {
+  .stabs { display: flex; }
+  .shell, .pages, .page { height: calc(100vh - 86px); height: calc(100dvh - 86px); }
+}
+.photo-style-opt {
+  padding: 8px 10px; border: 1px solid var(--mid); cursor: pointer;
+  transition: all .13s; -webkit-tap-highlight-color: transparent;
+}
+.photo-style-opt:hover { border-color: var(--black); }
+.photo-style-opt.on { border-color: var(--black); background: var(--off); }
+.photo-card { border: 1px solid var(--mid); cursor: pointer; transition: all .13s; overflow: hidden; }
+.photo-card:hover, .photo-card.on { border-color: var(--black); }
+.photo-card.on { outline: 2px solid var(--black); }
+.photo-img { width: 100%; display: block; object-fit: cover; max-height: 200px; background: var(--light); }
+.photo-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 5px 7px; color: var(--stone); display: block; }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">FOR ME <em>NY</em></div>
+  <span class="hdr-badge" id="hdr-badge">2026年3月号</span>
+</header>
+
+<div class="api-bar" id="api-bar">
+  <div class="api-inner">
+    <span class="api-lbl">OpenAI Key</span>
+    <input type="password" class="api-inp" id="api-key" placeholder="sk-..." oninput="checkKey()">
+    <span id="api-st" style="font-size:10px">未入力</span>
+    <a href="https://platform.openai.com/api-keys" target="_blank" style="font-size:10px;color:var(--stone)">取得方法 ↗</a>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="stabs">
+    <button class="st on" data-p="1" onclick="goPage(1)"><div class="st-n">1</div>トピック</button>
+    <button class="st" data-p="2" onclick="goPage(2)"><div class="st-n">2</div>記事生成</button>
+    <button class="st" data-p="3" onclick="goPage(3)"><div class="st-n">3</div>ビジュアル</button>
+    <button class="st" data-p="4" onclick="goPage(4)"><div class="st-n">4</div>掲載</button>
+  </nav>
+
+  <div class="pages">
+
+    <!-- ═══ PAGE 1: TOPICS ═══ -->
+    <div class="page on" id="page1">
+      <div class="two-col">
+
+        <!-- 左：テーマ選択 + 検索 + 結果リスト -->
+        <div class="cl cl-l">
+
+          <!-- テーマ選択パネル（常時表示） -->
+          <div id="theme-panel">
+            <div class="ptitle">業界リサーチ</div>
+            <div class="pdesc">テーマを選ぶか、キーワードを入力して検索すると実在する記事・論文が表示されます。</div>
+
+            <div class="slbl" style="margin-bottom:7px">テーマを選択（複数可）</div>
+            <div id="theme-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
+
+            <div class="slbl" style="margin-bottom:5px">キーワードで検索（任意）</div>
+            <div style="position:relative;margin-bottom:12px">
+              <input type="text" id="keyword-input"
+                class="fi"
+                placeholder="例：即興演劇 コミュニケーション、心理的安全性 職場、expressive arts therapy..."
+                style="padding-right:36px"
+                onkeydown="if(event.key==='Enter')searchMore()">
+              <button onclick="document.getElementById('keyword-input').value=''"
+                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--stone);font-size:14px;line-height:1;padding:2px"
+                title="クリア">✕</button>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-ja" checked style="accent-color:var(--black)"> 日本語</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-en" checked style="accent-color:var(--black)"> 英語</label>
+            </div>
+
+            <button class="btn btn-blk btn-full" id="search-btn" onclick="searchMore()">
+              🔍 検索する
+            </button>
+            <div id="search-loading" style="display:none;text-align:center;padding:16px;font-size:11px;color:var(--stone);margin-top:8px">
+              <div class="spin" style="margin:0 auto 8px"></div>
+              ウェブ検索中... (10〜20秒)
+            </div>
+          </div>
+
+          <!-- 検索結果リスト（検索後に表示） -->
+          <div id="results-area" style="display:none">
+            <div class="div" style="margin:14px 0"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+              <span id="page-info" style="font-size:10px;color:var(--stone)"></span>
+              <button class="btn btn-out btn-sm" onclick="resetSearch()">↺ テーマを変えて再検索</button>
+            </div>
+            <div id="topic-list"></div>
+            <div style="margin-top:12px">
+              <button class="btn btn-out btn-full btn-sm" id="more-btn" onclick="searchMore(true)">＋ 同じテーマで追加10件を検索</button>
+            </div>
+          </div>
+
+          <div id="r-error" style="display:none;padding:11px;background:#FDF0EE;border:1px solid #E0B8B0;font-size:11px;color:#8B2A1A;margin-top:10px;line-height:1.6"></div>
+        </div>
+
+        <!-- 右：選択中 -->
+        <div class="cl cl-r">
+          <div class="ptitle">選択中</div>
+          <div class="pdesc">最大3件。これが記事の元ネタになります。</div>
+          <div id="sel-panel"><div class="empty">—<br><span style="font-size:11px">左でテーマを選んで検索してください</span></div></div>
+          <div id="next-area" style="display:none;margin-top:14px">
+            <button class="btn btn-blk btn-full" onclick="goPage(2)">② 記事を生成する →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ PAGE 2: GENERATE ═══ -->
+    <div class="page" id="page2">
+      <div class="two-col">
+        <div class="cl cl-l">
+          <div class="ptitle" style="font-size:18px">生成設定</div>
+          <div class="div"></div>
+          <div class="fg"><label class="slbl">号数・月</label><input type="month" class="fi" id="issue-month" value="2026-03" oninput="updateBadge()"></div>
+          <div class="fg">
+            <label class="slbl">トーン</label>
+            <select class="fi" id="tone" style="cursor:pointer">
+              <option value="professional">プロフェッショナル（研究者・企業向け）</option>
+              <option value="warm">温かみのある（教育者・コミュニティ向け）</option>
+              <option value="casual">カジュアル（SNSシェア向け）</option>
+              <option value="bilingual">日英バイリンガル（グローバル向け）</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="slbl">文字数目安：<span id="wlen-lbl">600</span>字</label>
+            <input type="range" min="300" max="1200" step="100" value="600" id="wlen" oninput="document.getElementById('wlen-lbl').textContent=this.value" style="width:100%;margin-top:4px;accent-color:var(--black)">
+          </div>
+          <div class="div"></div>
+          <button class="btn btn-blk btn-full" id="gen-btn" onclick="generate()" style="font-size:12px;padding:13px;letter-spacing:.1em">✦ 記事を自動生成</button>
+          <div style="font-size:10px;color:var(--stone);margin-top:7px;text-align:center;line-height:1.5">APIキーを上部バナーに入力してください</div>
+        </div>
+
+        <div class="cl cl-r" style="display:flex;flex-direction:column">
+          <div class="gst" id="gst"><div class="spin" id="gst-sp"></div><span id="gst-msg">生成中...</span></div>
+
+          <!-- タイトル -->
+          <div class="asec">
+            <div class="asec-hd"><span class="asec-lbl">タイトル</span><button class="btn btn-out btn-sm" onclick="rewrite('title')">書き直し</button></div>
+            <div class="asec-body"><input type="text" class="fi" id="f-title" placeholder="（自動生成されます）"></div>
+          </div>
+
+          <!-- サブタイトル -->
+          <div class="asec">
+            <div class="asec-hd"><span class="asec-lbl">サブタイトル</span><button class="btn btn-out btn-sm" onclick="rewrite('sub')">書き直し</button></div>
+            <div class="asec-body"><input type="text" class="fi" id="f-sub" placeholder="（自動生成されます）"></div>
+          </div>
+
+          <!-- リード文 + AI微調整 -->
+          <div class="asec">
+            <div class="asec-hd">
+              <span class="asec-lbl">リード文</span>
+              <div style="display:flex;gap:5px">
+                <button class="btn btn-out btn-sm" onclick="rewrite('lead')">書き直し</button>
+                <button class="btn btn-out btn-sm" onclick="toggleAdjust('lead-adjust')">✦ 微調整</button>
+              </div>
+            </div>
+            <div class="asec-body"><textarea class="ta" id="f-lead" rows="3" placeholder="（自動生成されます）"></textarea></div>
+          </div>
+          <div class="ai-adjust" id="lead-adjust">
+            <div class="ai-adjust-hd">✦ AIに微調整を指示</div>
+            <div class="ai-adjust-body">
+              <div class="adjust-hint">例：「もっと温かいトーンに」「研究の数字を入れて」「短く50字以内に」「英語のフレーズを冒頭に加えて」</div>
+              <textarea class="adjust-input" id="lead-adjust-input" rows="2" placeholder="修正の指示を日本語で入力..."></textarea>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-blk btn-sm" onclick="aiAdjust('lead')">適用</button>
+                <button class="btn btn-out btn-sm" onclick="toggleAdjust('lead-adjust')">閉じる</button>
+              </div>
+              <div class="gst" id="lead-adj-st"><div class="spin"></div><span id="lead-adj-msg"></span></div>
+            </div>
+          </div>
+
+          <!-- 本文 + AI微調整 -->
+          <div class="asec">
+            <div class="asec-hd">
+              <span class="asec-lbl">本文</span>
+              <div style="display:flex;gap:5px">
+                <button class="btn btn-out btn-sm" onclick="rewrite('body')">書き直し</button>
+                <button class="btn btn-out btn-sm" onclick="expandBody()">拡張</button>
+                <button class="btn btn-out btn-sm" onclick="toggleAdjust('body-adjust')">✦ 微調整</button>
+              </div>
+            </div>
+            <div class="asec-body"><textarea class="ta" id="f-body" rows="9" placeholder="（自動生成されます）"></textarea></div>
+          </div>
+          <div class="ai-adjust" id="body-adjust">
+            <div class="ai-adjust-hd">✦ AIに微調整を指示</div>
+            <div class="ai-adjust-body">
+              <div class="adjust-hint">例：「慶應大学との共同研究を冒頭に触れて」「箇条書きのパートを加えて」「締めをより前向きに」「インプロの具体例を追加」</div>
+              <textarea class="adjust-input" id="body-adjust-input" rows="2" placeholder="修正の指示を日本語で入力..."></textarea>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-blk btn-sm" onclick="aiAdjust('body')">適用</button>
+                <button class="btn btn-out btn-sm" onclick="toggleAdjust('body-adjust')">閉じる</button>
+              </div>
+              <div class="gst" id="body-adj-st"><div class="spin"></div><span id="body-adj-msg"></span></div>
+            </div>
+          </div>
+
+          <!-- 締め -->
+          <div class="asec">
+            <div class="asec-hd"><span class="asec-lbl">締めのメッセージ</span><button class="btn btn-out btn-sm" onclick="rewrite('closing')">書き直し</button></div>
+            <div class="asec-body"><textarea class="ta" id="f-closing" rows="2" placeholder="記事の最後に残る一言。印象的な言葉・研究からの引用・FOR ME NYからのメッセージなど（自動生成されます）"></textarea></div>
+          </div>
+
+          <!-- 参考文献 -->
+          <div class="asec" id="ref-section" style="display:none">
+            <div class="asec-hd">
+              <span class="asec-lbl">参考文献・リサーチ出典</span>
+              <div style="display:flex;gap:5px;align-items:center">
+                <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--stone);cursor:pointer">
+                  <input type="checkbox" id="show-refs" checked onchange="syncPreview()" style="accent-color:var(--black)">
+                  記事に表示
+                </label>
+              </div>
+            </div>
+            <div class="asec-body">
+              <div id="ref-search-status" style="font-size:11px;color:var(--stone);margin-bottom:8px;display:none">
+                <span class="spin" style="display:inline-block;vertical-align:middle;margin-right:6px"></span>
+                元記事のURLを検索中...
+              </div>
+              <div id="ref-list" style="font-size:11px;color:var(--stone);line-height:1.9"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-blk" onclick="goPage(3)">③ ビジュアル設定へ →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE 3: VISUAL ═══ -->
+    <div class="page" id="page3">
+      <div class="two-col">
+        <!-- Preview -->
+        <div class="cl cl-r preview-bg" style="display:flex;flex-direction:column;align-items:center;padding:22px 14px;">
+          <div style="font-size:9px;color:var(--stone);margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase">Preview</div>
+          <div class="nl-wrap" id="nl-preview"></div>
+          <div style="font-size:10px;color:var(--stone);margin-top:10px;text-align:center" id="char-info"></div>
+        </div>
+        <!-- Controls -->
+        <div class="cl-side">
+          <div class="vp">
+
+            <!-- Header template -->
+            <div style="margin-bottom:16px">
+              <div class="vp-title">ヘッダーテンプレート</div>
+              <div class="tpl-grid" id="tpl-grid">
+                <div class="tpl-opt on" data-t="classic" onclick="setTpl(this,'classic')">
+                  <div class="tpl-thumb" id="th-classic"></div>
+                  <span class="tpl-name">クラシック</span>
+                </div>
+                <div class="tpl-opt" data-t="split" onclick="setTpl(this,'split')">
+                  <div class="tpl-thumb" id="th-split"></div>
+                  <span class="tpl-name">スプリット</span>
+                </div>
+                <div class="tpl-opt" data-t="minimal" onclick="setTpl(this,'minimal')">
+                  <div class="tpl-thumb" id="th-minimal"></div>
+                  <span class="tpl-name">ミニマル</span>
+                </div>
+                <div class="tpl-opt" data-t="frame" onclick="setTpl(this,'frame')">
+                  <div class="tpl-thumb" id="th-frame"></div>
+                  <span class="tpl-name">フレーム</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="div"></div>
+
+            <!-- Color palette — FOR ME NY準拠 12色 -->
+            <div style="margin-bottom:16px">
+              <div class="vp-title">カラーパレット</div>
+              <div class="palette-grid" id="palette-grid"></div>
+            </div>
+
+            <div class="div"></div>
+
+            <!-- Article visual — 2タブ -->
+            <div style="margin-bottom:16px">
+              <div class="vp-title">記事内ビジュアル</div>
+
+              <!-- タブ切り替え -->
+              <div style="display:flex;border:1px solid var(--mid);margin-bottom:10px">
+                <button class="vis-tab on" id="vtab-diagram" onclick="switchVisTab('diagram')" style="flex:1;padding:7px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:none;background:var(--black);color:var(--white);transition:all .15s">図解</button>
+                <button class="vis-tab" id="vtab-photo" onclick="switchVisTab('photo')" style="flex:1;padding:7px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:none;background:var(--white);color:var(--stone);transition:all .15s">写真風</button>
+              </div>
+
+              <!-- 図解パネル -->
+              <div id="vis-panel-diagram">
+                <div class="vis-gen-btn" id="vis-gen-btn" onclick="generateVisuals()">
+                  <span style="font-size:18px">✦</span>
+                  <span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">図解を生成（3案）</span>
+                  <span style="font-size:10px;color:var(--stone)">フロー図・コンセプト図・データ図</span>
+                </div>
+                <div class="vis-grid" id="vis-grid" style="display:none;margin-top:8px"></div>
+                <div class="vis-adjust" id="vis-adjust">
+                  <div class="vis-adjust-lbl">✦ 図解を微調整</div>
+                  <!-- クイック選択ボタン -->
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px" id="quick-adjust-btns">
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('矢印と線を太くして見やすく')">矢印を太く</button>
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('日本語のラベルテキストをすべて大きく読みやすく')">文字を大きく</button>
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('要素の数を減らしてよりシンプルにして')">シンプルに</button>
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('四角いボックスを角丸の丸みのある形に変えて')">角丸に</button>
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('横向きのレイアウトを縦向きのフローに変えて')">縦レイアウトに</button>
+                    <button class="btn btn-out btn-sm" style="font-size:9px;padding:4px 8px;text-transform:none;letter-spacing:0" onclick="quickAdjust('背景を白にして枠線と文字をより濃くコントラストを高めて')">コントラスト強く</button>
+                  </div>
+                  <div class="vis-adjust-hint" style="margin-bottom:5px">または自由に指示：</div>
+                  <textarea class="vis-adjust-input" id="vis-adjust-input" rows="2" placeholder="例：「中央のボックスを強調して」「円グラフに変えて」「英語ラベルを日本語に」"></textarea>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <button class="btn btn-blk btn-sm" onclick="adjustVisual()">図解を更新</button>
+                    <div class="gst" id="vis-adj-st" style="margin:0;border:none;background:none;padding:0"><div class="spin"></div><span id="vis-adj-msg"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 写真風パネル -->
+              <div id="vis-panel-photo" style="display:none">
+                <div style="font-size:10px;color:var(--stone);line-height:1.6;margin-bottom:8px">
+                  DALL-E 3で記事内容に沿った写真風画像を生成します。<br>
+                  <span style="color:#8B2A1A;font-weight:600">※ gpt-image-1 / dall-e-3対応のAPIキーが必要です。</span>
+                </div>
+
+                <!-- スタイル選択 -->
+                <div style="margin-bottom:8px">
+                  <div class="slbl" style="margin-bottom:5px">写真スタイル</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px" id="photo-style-grid">
+                    <div class="photo-style-opt on" data-style="workshop" onclick="selectPhotoStyle(this,'workshop')">
+                      <div style="font-size:10px;font-weight:600">ワークショップ</div>
+                      <div style="font-size:9px;color:var(--stone)">人々が対話・活動する場面</div>
+                    </div>
+                    <div class="photo-style-opt" data-style="nature" onclick="selectPhotoStyle(this,'nature')">
+                      <div style="font-size:10px;font-weight:600">自然・静寂</div>
+                      <div style="font-size:9px;color:var(--stone)">マインドフルな空間・自然</div>
+                    </div>
+                    <div class="photo-style-opt" data-style="abstract" onclick="selectPhotoStyle(this,'abstract')">
+                      <div style="font-size:10px;font-weight:600">抽象・アート</div>
+                      <div style="font-size:9px;color:var(--stone)">概念を視覚化した芸術的表現</div>
+                    </div>
+                    <div class="photo-style-opt" data-style="office" onclick="selectPhotoStyle(this,'office')">
+                      <div style="font-size:10px;font-weight:600">ビジネス</div>
+                      <div style="font-size:9px;color:var(--stone)">企業・教育の現場風景</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- カスタムプロンプト -->
+                <div style="margin-bottom:8px">
+                  <div class="slbl">追加の指示（任意）</div>
+                  <textarea class="vis-adjust-input" id="photo-custom-prompt" rows="2" placeholder="例：「窓際で瞑想する人」「円になって座る学生たち」"></textarea>
+                </div>
+
+                <button class="vis-gen-btn" id="photo-gen-btn" onclick="generatePhoto()" style="margin-bottom:8px">
+                  <span style="font-size:18px">📷</span>
+                  <span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">写真を生成</span>
+                  <span style="font-size:10px;color:var(--stone)">DALL-E 3 で生成 → 選択</span>
+                </button>
+
+                <div id="photo-grid" style="display:none">
+                  <div style="display:grid;grid-template-columns:1fr;gap:8px" id="photo-cards"></div>
+                  <div style="display:flex;gap:6px;margin-top:8px">
+                    <button class="btn btn-out btn-sm btn-full" onclick="regeneratePhoto()">↺ 別の写真を生成</button>
+                  </div>
+                </div>
+
+                <!-- 写真微調整 -->
+                <div class="vis-adjust" id="photo-adjust">
+                  <div class="vis-adjust-lbl">✦ 写真を微調整</div>
+                  <div class="vis-adjust-hint">例：「もっと明るく」「屋外の場面に」「モノクロに」「人を増やして」</div>
+                  <textarea class="vis-adjust-input" id="photo-adjust-input" rows="2" placeholder="修正の指示を入力..."></textarea>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <button class="btn btn-blk btn-sm" onclick="adjustPhoto()">写真を更新</button>
+                    <div class="gst" id="photo-adj-st" style="margin:0;border:none;background:none;padding:0"><div class="spin"></div><span id="photo-adj-msg"></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div"></div>
+
+            <!-- Tags -->
+            <div style="margin-bottom:16px">
+              <div class="vp-title">タグバッジ</div>
+              <div class="tag-chips" id="tag-chips"></div>
+            </div>
+
+            <div class="div"></div>
+            <div style="font-size:11px;color:var(--stone);line-height:2.1;margin-bottom:11px" id="art-info">—</div>
+            <button class="btn btn-blk btn-full" onclick="goPage(4)">④ WordPress掲載へ →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE 4: PUBLISH ═══ -->
+    <div class="page" id="page4">
+      <div class="pub-pg">
+        <div class="ptitle">掲載準備</div>
+        <div class="pdesc">下のHTMLをコピーして、WordPressの投稿画面（コードエディター）に貼り付けてください。</div>
+        <div id="checklist" style="margin:14px 0"></div>
+        <label class="slbl" style="margin-top:14px">WordPress 投稿用 HTML</label>
+        <div class="pre-blk"><button class="cpy-btn" id="cpy-btn" onclick="copyWP()">コピー</button><div id="wp-html">（先に記事を生成してください）</div></div>
+        <div class="div"></div>
+        <ol style="font-size:11px;color:var(--stone);line-height:2.4;padding-left:18px;margin-bottom:20px">
+          <li>WordPress 管理画面 → 投稿 → 新規追加</li>
+          <li>タイトル欄に記事タイトルを入力</li>
+          <li>本文エリアを「コードエディター」モードにする</li>
+          <li>上のHTMLをそのまま貼り付ける</li>
+          <li>カテゴリ「お知らせ」→ 公開</li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="https://formenewyork.com/wp-admin/post-new.php" target="_blank" class="btn btn-blk" style="text-decoration:none">WordPress を開く ↗</a>
+          <button class="btn btn-out" onclick="goPage(1)">← 最初からやり直す</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<nav class="bnav">
+  <div class="bnav-inner">
+    <button class="bn on" data-p="1" onclick="goPage(1)"><span class="bn-ico">○</span><span>選択</span><span class="bn-bar"></span></button>
+    <button class="bn" data-p="2" onclick="goPage(2)"><span class="bn-ico">✦</span><span>生成</span><span class="bn-bar"></span></button>
+    <button class="bn" data-p="3" onclick="goPage(3)"><span class="bn-ico">◈</span><span>デザイン</span><span class="bn-bar"></span></button>
+    <button class="bn" data-p="4" onclick="goPage(4)"><span class="bn-ico">→</span><span>掲載</span><span class="bn-bar"></span></button>
+  </div>
+</nav>
+
+<script>
+/* ════════════════════════════════
+   TOPIC STATE — リアルタイム検索
+   フィクションデータは一切使用しない
+════════════════════════════════ */
+let liveTopics  = [];   // 検索で取得した実在トピック
+let searchCount = 0;    // 何回目の検索か（「次の10件」用）
+
+/* ════════════════════════════════
+   COLOR PALETTE — FOR ME NY準拠 12色
+   サイトの写真・空間から抽出したトーン
+════════════════════════════════ */
+const PALETTES = [
+  {id:'p0', name:'ブラック',      bg:'#0F0F0F', fg:'#FFFFFF', acc:'#B89040', thumb:'#0F0F0F'},
+  {id:'p1', name:'クリーム白',    bg:'#F7F5F1', fg:'#0F0F0F', acc:'#8A8279', thumb:'#F7F5F1', border:true},
+  {id:'p2', name:'ウォームグレー',bg:'#4A4540', fg:'#F7F5F1', acc:'#C8B890', thumb:'#4A4540'},
+  {id:'p3', name:'ゴールド',      bg:'#B89040', fg:'#FFFFFF', acc:'#0F0F0F', thumb:'#B89040'},
+  {id:'p4', name:'チャコール',    bg:'#2A2520', fg:'#EDE8E0', acc:'#B89040', thumb:'#2A2520'},
+  {id:'p5', name:'ライトベージュ',bg:'#EDE8E0', fg:'#2A2520', acc:'#6B7F5E', thumb:'#EDE8E0', border:true},
+  {id:'p6', name:'セージグリーン',bg:'#4E5F45', fg:'#F0EEE8', acc:'#C8B890', thumb:'#4E5F45'},
+  {id:'p7', name:'オフホワイト',  bg:'#FDFAF4', fg:'#3A3733', acc:'#B89040', thumb:'#FDFAF4', border:true},
+  {id:'p8', name:'スカイブルー',  bg:'#EAF4FB', fg:'#1A3A50', acc:'#3A7CA8', thumb:'#EAF4FB', border:true},
+  {id:'p9', name:'ミストブルー',  bg:'#D6E8F5', fg:'#1A3A50', acc:'#2A6090', thumb:'#D6E8F5', border:true},
+  {id:'p10',name:'ダスティブルー',bg:'#5E8FAA', fg:'#FFFFFF', acc:'#EAF4FB', thumb:'#5E8FAA'},
+  {id:'p11',name:'ディープブルー',bg:'#1E3D5C', fg:'#E8F2FA', acc:'#8FC4E0', thumb:'#1E3D5C'},
+];
+
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let selIds = [];
+let apiKey = '';
+let previewDone = false;
+let topicPage = 0;   // 0=1〜10, 1=11〜20, 2=21〜30
+let currentTpl = 'classic';
+let currentPal = PALETTES[0];
+let currentVisualSVG = '';
+let currentVisualIdx = -1;
+let generatedVisuals = [];
+let activeTags = new Set(['マインドフルネス', 'インプロ', '表現芸術']);
+
+/* ════════════════════════════════
+   実在する初期トピック 10件
+   （Claudeがウェブ検索で確認した記事）
+════════════════════════════════ */
+const INITIAL_TOPICS = [
+  {id:0,tag:"マインドフルネス",lang:"日本語",src:"慶應義塾大学マインドフルネス＆ストレス研究センター",
+   title:"マインドフルネス認知療法の職場の労働生産性に与える影響",
+   sum:"慶應義塾大学が企業と連携して実施したRCT研究。マインドフルネス認知療法（MBCT）が職場の労働生産性や精神的健康に与える効果を検証している。",
+   url:"https://csr.keio.ac.jp/"},
+  {id:1,tag:"インプロ",lang:"English",src:"Springer Nature / Applied Improvisation",
+   title:"Applied Improvisation Methods for Corporate Spaces",
+   sum:"企業環境におけるインプロの応用手法（AIM）を詳説。積極的傾聴・コミュニケーション・不確実性への適応など、プロフェッショナルスキル向上への効果を論じる。",
+   url:"https://link.springer.com/rwe/10.1007/978-3-031-51650-4_166-1"},
+  {id:2,tag:"心理的安全性",lang:"English",src:"AndAlso Improv",
+   title:"Psychological Safety in Teams & Improvisation Training",
+   sum:"ハーバード大学Edmondson教授の心理的安全性理論とインプロトレーニングの関係を実践的に解説。「Yes, And」原則が職場の心理的安全性を高めるメカニズムを解説。",
+   url:"https://andalsoimprov.com/improv-in-the-workplace/psychological-safety-in-teams-improvisation-training/"},
+  {id:3,tag:"インプロ",lang:"English",src:"Training Industry",
+   title:"The Surprising Benefits of Improv in Corporate Training",
+   sum:"インプロが企業研修にもたらす効果を紹介。心理的安全性・深い傾聴・創造性・インクルージョンの促進など、多角的な視点から実例とともに解説する。",
+   url:"https://trainingindustry.com/articles/content-development/the-surprising-benefits-of-improv-in-corporate-training/"},
+  {id:4,tag:"マインドフルネス",lang:"日本語",src:"一般社団法人ウェルビーイングデザイン",
+   title:"論文でウェルビーイング！第２回「マインドフルネスとウェルビーイング」",
+   sum:"CiNii登録論文数2000件超のマインドフルネス研究を概観。身体的・精神的・社会的ウェルビーイングへの多面的効果と、日本における研究の必要性を論じる。",
+   url:"https://www.well-being-design.jp/news/961/"},
+  {id:5,tag:"マインドフルネス",lang:"日本語",src:"リクルートワークス研究所",
+   title:"オンラインで従業員に個別最適化されたメンタルヘルスケアを提供──行動的ウェルビーイング",
+   sum:"米国大手企業152社調査で77%が従業員メンタルヘルス悪化と回答。CBT・マインドフルネスを活用した行動的ウェルビーイングプラットフォームの動向を解説。",
+   url:"https://www.works-i.com/research/labour/column/tm_tech/detail009.html"},
+  {id:6,tag:"心理的安全性",lang:"English",src:"New York Improv Theater",
+   title:"Improv Delivers Psychological Safety",
+   sum:"Googleのプロジェクト・アリストテレス（チーム成功の最重要因子＝心理的安全性）とインプロの「Yes, And」原則の直接的なつながりを解説する実践的記事。",
+   url:"https://newyorkimprovtheater.com/2024/04/03/psychological-safety/"},
+  {id:7,tag:"マインドフルネス",lang:"日本語",src:"東京大学",
+   title:"個人と組織のウェルビーイングを高めるマインドフルネス（3週連続プログラム）",
+   sum:"シンガポール経営大学のヨッヘン・レブ教授による東大プログラム。マインドフルネスがストレスマネジメント・意思決定・コミュニケーション能力向上に与える効果を解説。",
+   url:"https://www.u-tokyo.ac.jp/focus/ja/events/z0109_00027.html"},
+  {id:8,tag:"表現芸術",lang:"日本語",src:"文化庁",
+   title:"文化芸術教育の充実・改善に向けた検討会議（文部科学省資料）",
+   sum:"令和6年の文化庁検討会議資料。即興性・創発性のある学びとしての文化芸術教育、体験型学習とWell-beingの関係、次期学習指導要領への反映を議論。",
+   url:"https://www.bunka.go.jp/koho_hodo_oshirase/hodohappyo/pdf/94063401_01.pdf"},
+  {id:9,tag:"マインドフルネス",lang:"日本語",src:"MELON（株式会社Melon）",
+   title:"メンタルウェルビーイングとマインドフルネス〜企業人事向けオンラインセミナー〜",
+   sum:"日本初のオンライン・マインドフルネスプラットフォームMELONによる企業人事向けセミナーレポート。健康経営・人的資本経営におけるマインドフルネスの役割を解説。",
+   url:"https://www.the-melon.com/wellbeing-seminar-20230222"},
+];
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+/* ════ iOS / iPhone 対応 ════ */
+(function() {
+  // ダブルタップズーム防止
+  let lastTap = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTap < 300) e.preventDefault();
+    lastTap = now;
+  }, { passive: false });
+
+  // iOSキーボード表示時: fixed要素がずれる問題を補正
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    const bnav = document.querySelector('.bnav');
+    window.addEventListener('focusin', () => {
+      if (bnav) bnav.style.display = 'none';
+    });
+    window.addEventListener('focusout', () => {
+      setTimeout(() => {
+        if (bnav) bnav.style.display = 'block';
+        window.scrollTo(0, 0);
+      }, 100);
+    });
+  }
+})();
+
+window.addEventListener('load', () => {
+  const s = localStorage.getItem('fny_k');
+  if (s) { document.getElementById('api-key').value = s; checkKey(); }
+  initThemeChips();
+  // 起動時はテーマ選択のみ表示（検索はユーザーが実行）
+  renderPalettes();
+  renderTplThumbs();
+  initTagChips();
+  syncPreview();
+});
+
+/* ── テーマチップス ── */
+const THEMES = ['マインドフルネス','インプロ','表現芸術','体験型学習','AI×教育','感情知性','心理的安全性','創造性','リーダーシップ'];
+function initThemeChips() {
+  const wrap = document.getElementById('theme-chips');
+  if (!wrap) return;
+  // デフォルトで最初の3つを選択
+  const defaults = new Set(['マインドフルネス','インプロ','表現芸術']);
+  THEMES.forEach(theme => {
+    const d = document.createElement('div');
+    d.className = 'tag-chip' + (defaults.has(theme) ? ' on' : '');
+    d.textContent = theme;
+    d.dataset.theme = theme;
+    d.onclick = () => d.classList.toggle('on');
+    wrap.appendChild(d);
+  });
+}
+
+/* ── テーマを変えて再検索 ── */
+function resetSearch() {
+  liveTopics = [];
+  selIds = [];
+  document.getElementById('topic-list').innerHTML = '';
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('r-error').style.display = 'none';
+  document.getElementById('page-info').textContent = '';
+  document.getElementById('search-btn').style.display = 'inline-flex';
+  const kw = document.getElementById('keyword-input');
+  if (kw) kw.value = '';
+  renderSel();
+}
+
+/* ════════════════════════════════
+   追加検索 — gpt-4o-mini-search-preview
+   リアルタイム・ウェブ検索（従量課金）
+   既存のOpenAI APIキーでそのまま動作
+════════════════════════════════ */
+async function searchMore(isAdditional = false) {
+  if (!apiKey) { alert('APIキーを入力してください（画面上部バナー）'); return; }
+
+  const themes  = [...document.querySelectorAll('#theme-chips .tag-chip.on')].map(c => c.dataset.theme);
+  const keyword = (document.getElementById('keyword-input')?.value || '').trim();
+
+  // テーマかキーワードのどちらかは必須
+  if (!themes.length && !keyword) {
+    alert('テーマを選ぶか、キーワードを入力してください');
+    return;
+  }
+
+  const langJa  = document.getElementById('lang-ja').checked;
+  const langEn  = document.getElementById('lang-en').checked;
+  const langStr = [langJa && '日本語', langEn && '英語'].filter(Boolean).join('・');
+
+  const btn     = document.getElementById('search-btn');
+  const moreBtn = document.getElementById('more-btn');
+  const loading = document.getElementById('search-loading');
+  const errDiv  = document.getElementById('r-error');
+
+  btn.style.display     = 'none';
+  if (moreBtn) moreBtn.disabled = true;
+  loading.style.display = 'block';
+  errDiv.style.display  = 'none';
+
+  // 「追加10件」でない場合はリストをリセット
+  if (!isAdditional) {
+    liveTopics = [];
+    selIds = [];
+    renderSel();
+  }
+
+  const excludeList = liveTopics.map(t => t.title).slice(-20);
+  const excludeStr  = excludeList.length
+    ? `\n除外（既表示済み）:\n${excludeList.map(t => '- ' + t).join('\n')}`
+    : '';
+
+  // 言語指示を行動として明確に構成
+  const langInstructions = [];
+  if (langJa && langEn) {
+    langInstructions.push('日本語の記事・論文と英語の記事・論文を混在させて、両方の言語から探してください（日本語5件・英語5件が目安）');
+  } else if (langJa) {
+    langInstructions.push('日本語の記事・論文のみを探してください。英語の記事は含めないでください');
+  } else if (langEn) {
+    langInstructions.push('English articles and papers only. Do not include Japanese articles. Search for English-language sources such as journals, news sites, and research databases');
+  }
+  const langInstruction = langInstructions[0] || '日本語・英語どちらでも可';
+
+  // テーマとキーワードを組み合わせた検索クエリを作成
+  const queryParts = [];
+  if (themes.length) queryParts.push(`テーマ: ${themes.join('・')}`);
+  if (keyword)       queryParts.push(`キーワード: ${keyword}`);
+  const queryStr = queryParts.join('\n');
+  const firstTag = themes[0] || keyword.split(/[\s、,]+/)[0] || '教育';
+
+  const prompt = `FOR ME NY（インプロ×マインドフルネス×表現芸術の体験型教育プログラム企業）のニュースレター参考資料として使える、ウェブ上に実在する記事・論文・レポートを10件探してください。
+
+${queryStr}
+
+【言語指示】${langInstruction}
+${excludeStr}
+
+【その他の条件】
+- 実際にアクセス可能なURLを含めること
+- J-STAGE・CiNii・PubMed・NHK・日経・HBR・Springer・Nature等の信頼できる媒体を優先
+
+以下のJSON形式のみで返してください（前置き・説明・コードブロック不要）:
+{"results":[{"title":"タイトル","src":"掲載誌・サイト名","lang":"日本語またはEnglish","tag":"${firstTag}","sum":"内容の要約2〜3文","url":"https://実際のURL"}]}`;
+
+  try {
+    // 言語をsystemロールで強制 + 英語のみの場合はプロンプト自体も英語
+    let systemMsg, userPrompt;
+
+    if (langEn && !langJa) {
+      // 英語のみ：プロンプト全体を英語で記述して検索クエリも英語に誘導
+      const enThemes = themes.join(', ') || '';
+      const enKeyword = keyword || '';
+      const enQuery = [enThemes, enKeyword].filter(Boolean).join(', ');
+      systemMsg = 'You are a research assistant. You MUST search for and return ONLY English-language articles, papers, and reports. Do NOT include any Japanese-language results. All titles, sources, and summaries in your response must be in English.';
+      userPrompt = `Find 10 real, existing English-language articles, papers, or reports relevant to: ${enQuery}
+
+Requirements:
+- English sources ONLY (journals, news sites, research databases like PubMed, Springer, Nature, HBR, etc.)
+- NO Japanese articles
+- Include a working URL for each
+${excludeList.length ? `\nExclude (already shown):\n${excludeList.map(t => '- ' + t).join('\n')}` : ''}
+
+Return ONLY this JSON (no explanation, no code block):
+{"results":[{"title":"Article title","src":"Journal/Site name","lang":"English","tag":"${firstTag}","sum":"2-3 sentence summary","url":"https://actual-url"}]}`;
+    } else if (langJa && !langEn) {
+      // 日本語のみ
+      systemMsg = '日本語の記事・論文のみを検索・提示してください。英語の記事は一切含めないでください。';
+      userPrompt = prompt;
+    } else {
+      // 両方
+      systemMsg = '日本語と英語の両方の記事・論文を検索してください。日本語と英語をバランスよく混在させてください（目安：各5件ずつ）。';
+      userPrompt = prompt;
+    }
+
+    const messages = [
+      { role: 'system', content: systemMsg },
+      { role: 'user',   content: userPrompt }
+    ];
+
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-search-preview',
+        web_search_options: {},
+        max_tokens: 2000,
+        messages
+      })
+    });
+
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      // モデルが使えない場合は通常モデルにフォールバック
+      if (r.status === 404 || r.status === 400) {
+        throw new Error('web_search_model_unavailable');
+      }
+      throw new Error(e.error?.message || 'APIエラー ' + r.status);
+    }
+
+    const data = await r.json();
+    const raw  = (data.choices?.[0]?.message?.content ?? '').replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+
+    let results = [];
+    // JSON抽出（多段）
+    try { const p = JSON.parse(raw); results = p.results || (Array.isArray(p) ? p : []); } catch(_) {}
+    if (!results.length) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) try { const p = JSON.parse(m[0]); results = p.results || []; } catch(_) {}
+    }
+    if (!results.length) {
+      const m = raw.match(/\[[\s\S]*\]/);
+      if (m) try { const r2 = JSON.parse(m[0]); if (Array.isArray(r2)) results = r2; } catch(_) {}
+    }
+    if (!results.length) throw new Error('検索結果の解析に失敗しました。もう一度お試しください。');
+
+    const offset    = liveTopics.length;
+    const newTopics = results.map((r2, i) => ({
+      id:    offset + i,
+      title: r2.title || '（タイトル不明）',
+      src:   r2.src   || r2.source || '（出典不明）',
+      lang:  r2.lang  || '',
+      tag:   r2.tag   || themes[0] || '',
+      sum:   r2.sum   || r2.summary || '',
+      url:   (r2.url && typeof r2.url === 'string' && r2.url.startsWith('http')) ? r2.url : null,
+    }));
+
+    liveTopics = [...liveTopics, ...newTopics];
+    newTopics.forEach(t => { if (t.url) topicUrls[t.id] = t.url; });
+    renderTopics();
+    document.getElementById('page-info').textContent = `${liveTopics.length}件表示中`;
+    // 結果エリアを表示
+    document.getElementById('results-area').style.display = 'block';
+
+  } catch(e) {
+    if (e.message === 'web_search_model_unavailable') {
+      // フォールバック：通常のgpt-4oで知識ベース検索
+      await searchMoreFallback(themes, keyword, langStr, excludeStr);
+    } else {
+      errDiv.style.display = 'block';
+      errDiv.innerHTML = `検索エラー: ${e.message}<br><span style="font-size:10px">※ gpt-4o-mini-search-previewが使えない場合、OpenAI APIキーのアカウントで有効化されているか確認してください。</span>`;
+    }
+  }
+
+  btn.style.display     = 'inline-flex';
+  if (moreBtn) moreBtn.disabled = false;
+  loading.style.display = 'none';
+}
+
+/* フォールバック：通常gpt-4oで知識ベース検索 */
+async function searchMoreFallback(themes, keyword, langStr, excludeStr) {
+  const errDiv = document.getElementById('r-error');
+  const queryParts = [];
+  if (themes.length) queryParts.push(`テーマ: ${themes.join('・')}`);
+  if (keyword)       queryParts.push(`キーワード: ${keyword}`);
+  const firstTag = themes[0] || (keyword.split(/[\s、,]+/)[0]) || '教育';
+  // 言語指示を明確に
+  const langNote = langStr === '英語'
+    ? 'English articles only. Do not include Japanese.'
+    : langStr === '日本語'
+    ? '日本語の記事のみ。英語記事は含めない。'
+    : '日本語・英語どちらも可（混在OK）';
+  const prompt = `あなたが確実に知っている実在の記事・論文を10件返してください（架空不可、不確かなURLはnull）。
+${queryParts.join('\n')}
+言語指示: ${langNote}${excludeStr}
+JSON形式のみ: {"results":[{"title":"...","src":"...","lang":"...","tag":"${firstTag}","sum":"...","url":"確実なURLまたはnull"}]}`;
+  try {
+    const raw = await callOpenAI(prompt, 2000);
+    let results = [];
+    try { const p = JSON.parse(raw); results = p.results || []; } catch(_) {}
+    if (!results.length) { const m = raw.match(/\{[\s\S]*\}/); if (m) try { results = JSON.parse(m[0]).results||[]; } catch(_) {} }
+    if (!results.length) throw new Error('解析失敗');
+    const offset = liveTopics.length;
+    const newTopics = results.map((r, i) => ({
+      id: offset+i, title: r.title||'', src: r.src||'', lang: r.lang||'',
+      tag: r.tag||themes[0], sum: r.sum||'',
+      url: (r.url&&r.url.startsWith('http')) ? r.url : null,
+    }));
+    liveTopics = [...liveTopics, ...newTopics];
+    newTopics.forEach(t => { if (t.url) topicUrls[t.id] = t.url; });
+    renderTopics();
+    document.getElementById('page-info').textContent = `${liveTopics.length}件表示中（知識ベース）`;
+    document.getElementById('results-area').style.display = 'block';
+    errDiv.style.display = 'block';
+    errDiv.style.background = '#EEF3EB';
+    errDiv.style.borderColor = '#A8C49A';
+    errDiv.style.color = '#2D5028';
+    errDiv.innerHTML = '⚠️ ウェブ検索モデルが使えないため、学習済み知識から取得しました。URLの正確性にご注意ください。';
+  } catch(e) {
+    errDiv.style.display = 'block';
+    errDiv.textContent = '検索エラー: ' + e.message;
+  }
+}
+
+
+
+
+
+function renderTopics() {
+  const list = document.getElementById('topic-list');
+  list.innerHTML = '';
+  // 全件表示（選択済みを上部に固定）
+  const selected  = liveTopics.filter(t => selIds.includes(t.id));
+  const unselected = liveTopics.filter(t => !selIds.includes(t.id));
+  const ordered   = [...selected, ...unselected];
+
+  ordered.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'tc' + (selIds.includes(t.id) ? ' on' : '');
+    d.id = 'tc' + t.id;
+    const urlBadge = t.url
+      ? `<a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--gold);text-decoration:none;margin-left:25px;margin-top:3px;border-bottom:1px solid var(--gold)">元記事を確認 →</a>`
+      : '';
+    const num = String(i + 1).padStart(2, '0');
+    d.innerHTML = `<div class="tc-chk">✓</div>
+      <div class="tc-top"><span class="tc-num">${num}</span><span class="tc-title">${t.title}</span></div>
+      <div class="tc-src">${t.src}${t.lang ? ' · ' + t.lang : ''}</div>
+      <div class="tc-sum">${t.sum}</div>
+      <span class="tc-tag">${t.tag}</span>
+      ${urlBadge}`;
+    d.onclick = () => toggleTopic(t.id);
+    list.appendChild(d);
+  });
+}
+
+function toggleTopic(rawId) {
+  const id = Number(rawId); // IDを必ず数値に統一
+  const card = document.getElementById('tc' + id);
+  if (!card) return;
+  if (selIds.includes(id)) {
+    selIds = selIds.filter(x => x !== id);
+    card.classList.remove('on');
+  } else {
+    if (selIds.length >= 3) { alert('最大3件まで選択できます'); return; }
+    selIds.push(id);
+    card.classList.add('on');
+  }
+  renderSel();
+}
+function renderSel() {
+  const p = document.getElementById('sel-panel'), a = document.getElementById('next-area');
+  if (!selIds.length) {
+    p.innerHTML = '<div class="empty">—<br><span style="font-size:11px">左からトピックを選んでください</span></div>';
+    a.style.display = 'none';
+    return;
+  }
+  a.style.display = 'block';
+  p.innerHTML = `<div style="font-size:10px;color:var(--stone);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em">${selIds.length} / 3 件選択中</div>`;
+  selIds.forEach(id => {
+    const t = liveTopics.find(x => x.id === Number(id));
+    if (!t) return;
+    const d = document.createElement('div');
+    d.className = 'sel-card';
+    d.style.position = 'relative';
+    const urlLink = t.url
+      ? `<a href="${t.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--gold);text-decoration:none;display:inline-block;margin-top:4px">元記事を確認 →</a>`
+      : '';
+    d.innerHTML = `
+      <button onclick="removeTopic(${t.id})" style="position:absolute;top:8px;right:8px;background:none;border:1px solid var(--mid);cursor:pointer;font-size:11px;color:var(--stone);padding:2px 7px;line-height:1.4;transition:all .15s" onmouseover="this.style.borderColor='var(--black)';this.style.color='var(--black)'" onmouseout="this.style.borderColor='var(--mid)';this.style.color='var(--stone)'">✕ 取り消し</button>
+      <div class="sel-title" style="padding-right:60px">${t.title}</div>
+      <div class="sel-sum">${t.sum}</div>
+      <span class="tc-tag">${t.tag}</span>${urlLink}`;
+    p.appendChild(d);
+  });
+}
+
+function removeTopic(id) {
+  const nid = Number(id);
+  selIds = selIds.filter(x => x !== nid);
+  const card = document.getElementById('tc' + nid);
+  if (card) card.classList.remove('on');
+  renderSel();
+}
+
+/* ── Palette ── */
+function renderPalettes() {
+  const grid = document.getElementById('palette-grid');
+  PALETTES.forEach(pal => {
+    const wrap = document.createElement('div');
+    const dot = document.createElement('div');
+    dot.className = 'pal' + (pal.id === currentPal.id ? ' on' : '');
+    dot.style.cssText = `background:${pal.thumb};${pal.border ? 'border:2px solid var(--mid)' : ''}`;
+    dot.title = pal.name;
+    dot.dataset.id = pal.id;
+    if (pal.fg === '#FFFFFF') dot.style.setProperty('--ck','#fff'); else dot.style.setProperty('--ck','#000');
+    dot.onclick = () => { document.querySelectorAll('.pal').forEach(v => v.classList.remove('on')); dot.classList.add('on'); currentPal = pal; renderTplThumbs(); syncPreview(); };
+    const lbl = document.createElement('div');
+    lbl.className = 'pal-label'; lbl.textContent = pal.name;
+    wrap.appendChild(dot); wrap.appendChild(lbl);
+    grid.appendChild(wrap);
+  });
+}
+
+/* ── Header templates ── */
+const TPL = {
+  classic: (p, title, sub, month) => `<svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="148" fill="${p.bg}"/><text x="28" y="32" font-size="8" fill="${p.fg}" opacity=".45" font-family="sans-serif" font-weight="600" letter-spacing="3">${month.toUpperCase()} · FOR ME NY</text><line x1="28" y1="40" x2="512" y2="40" stroke="${p.acc}" stroke-width="1"/><text x="28" y="83" font-size="28" fill="${p.fg}" font-family="Georgia,serif" font-weight="300">${title||'タイトル'}</text><text x="28" y="106" font-size="11" fill="${p.fg}" opacity=".5" font-family="sans-serif" font-weight="300">${sub||'サブタイトル'}</text><line x1="28" y1="128" x2="512" y2="128" stroke="${p.fg}" stroke-width=".4" opacity=".2"/></svg>`,
+  split:   (p, title, sub, month) => `<svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="252" height="148" fill="${p.bg}"/><rect x="252" y="0" width="288" height="148" fill="${p.acc}"/><text x="24" y="48" font-size="20" fill="${p.fg}" font-family="Georgia,serif" font-weight="300" letter-spacing="2">FOR ME NY</text><text x="24" y="72" font-size="8" fill="${p.fg}" opacity=".4" font-family="sans-serif" letter-spacing="2">${month}</text><line x1="24" y1="88" x2="202" y2="88" stroke="${p.fg}" stroke-width=".4" opacity=".25"/><text x="266" y="56" font-size="18" fill="rgba(255,255,255,.92)" font-family="Georgia,serif" font-weight="300">${(title||'タイトル').substring(0,13)}</text><text x="266" y="80" font-size="10" fill="rgba(255,255,255,.6)" font-family="sans-serif" font-weight="300">${(sub||'').substring(0,20)}</text></svg>`,
+  minimal: (p, title, sub, month) => `<svg viewBox="0 0 540 112" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="112" fill="#F7F5F1"/><line x1="28" y1="30" x2="512" y2="30" stroke="#C4BFB6" stroke-width=".5"/><text x="270" y="24" font-size="7" fill="#8A8279" font-family="sans-serif" font-weight="600" letter-spacing="4" text-anchor="middle">${month.toUpperCase()} · FOR ME NY</text><text x="270" y="68" font-size="26" fill="#0F0F0F" font-family="Georgia,serif" font-weight="300" text-anchor="middle">${title||'タイトル'}</text><text x="270" y="88" font-size="11" fill="#8A8279" font-family="sans-serif" font-weight="300" text-anchor="middle">${sub||''}</text><line x1="28" y1="100" x2="512" y2="100" stroke="#C4BFB6" stroke-width=".5"/></svg>`,
+  frame:   (p, title, sub, month) => `<svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="148" fill="${p.bg}"/><rect x="9" y="9" width="522" height="130" fill="none" stroke="${p.acc}" stroke-width="1"/><rect x="15" y="15" width="510" height="118" fill="none" stroke="${p.acc}" stroke-width=".3" opacity=".35"/><text x="270" y="44" font-size="7" fill="${p.fg}" opacity=".35" font-family="sans-serif" font-weight="600" letter-spacing="3" text-anchor="middle">FOR ME NY · ${month}</text><text x="270" y="84" font-size="26" fill="${p.fg}" font-family="Georgia,serif" font-weight="300" text-anchor="middle">${title||'タイトル'}</text><text x="270" y="107" font-size="11" fill="${p.fg}" opacity=".45" font-family="sans-serif" font-weight="300" text-anchor="middle">${sub||''}</text></svg>`,
+};
+
+function renderTplThumbs() {
+  const dummyTitle = document.getElementById('f-title')?.value || 'タイトル';
+  const dummySub   = document.getElementById('f-sub')?.value   || '';
+  const month = getMonthLabel();
+  ['classic','split','minimal','frame'].forEach(k => {
+    const el = document.getElementById('th-' + k);
+    if (el) el.innerHTML = TPL[k](currentPal, dummyTitle, dummySub, month);
+  });
+}
+
+function setTpl(el, tpl) {
+  document.querySelectorAll('.tpl-opt').forEach(v => v.classList.remove('on'));
+  el.classList.add('on'); currentTpl = tpl; syncPreview();
+}
+
+/* ── Tag chips ── */
+function initTagChips() {
+  const tags = ['マインドフルネス','インプロ','表現芸術','体験型学習','AI×教育','感情知性','創造性','心理的安全性'];
+  const wrap = document.getElementById('tag-chips');
+  tags.forEach(tag => {
+    const d = document.createElement('div');
+    d.className = 'tag-chip' + (activeTags.has(tag) ? ' on' : '');
+    d.textContent = tag; d.dataset.tag = tag;
+    d.onclick = () => {
+      if (activeTags.has(tag)) activeTags.delete(tag); else activeTags.add(tag);
+      d.classList.toggle('on', activeTags.has(tag));
+      syncPreview();
+    };
+    wrap.appendChild(d);
+  });
+}
+
+/* ── Navigation ── */
+function goPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById('page' + n).classList.add('on');
+  document.querySelectorAll('.st').forEach(t => {
+    const p = parseInt(t.dataset.p);
+    t.classList.remove('on','done');
+    if (p === n) t.classList.add('on');
+    else if (p < n) t.classList.add('done');
+    t.querySelector('.st-n').textContent = p < n ? '✓' : p;
+  });
+  document.querySelectorAll('.bn').forEach(t => t.classList.toggle('on', parseInt(t.dataset.p) === n));
+  if (n === 3) { syncPreview(); renderTplThumbs(); previewDone = true; }
+  if (n === 4) { buildWP(); renderChecklist(); }
+  document.getElementById('page' + n).scrollTop = 0;
+}
+
+function checkKey() {
+  const v = document.getElementById('api-key').value.trim();
+  const bar = document.getElementById('api-bar'), st = document.getElementById('api-st'), inp = document.getElementById('api-key');
+  if (v.startsWith('sk-') && v.length > 20) { apiKey = v; localStorage.setItem('fny_k', v); bar.className = 'api-bar ok'; st.textContent = '✓ 設定済み'; inp.className = 'api-inp ok'; }
+  else { apiKey = ''; bar.className = 'api-bar'; st.textContent = v ? '形式が正しくありません' : '未入力'; inp.className = 'api-inp'; }
+}
+
+function updateBadge() {
+  const v = document.getElementById('issue-month').value; if (!v) return;
+  const [y, m] = v.split('-');
+  document.getElementById('hdr-badge').textContent = y + '年' + parseInt(m) + '月号';
+}
+function getMonthLabel() {
+  const v = document.getElementById('issue-month').value || '2026-03';
+  const [y, m] = v.split('-');
+  return y + '年' + parseInt(m) + '月号';
+}
+
+/* ── OpenAI API ── */
+async function callOpenAI(prompt, max = 1200) {
+  if (!apiKey) throw new Error('APIキーが設定されていません');
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'gpt-4o', max_tokens: max, messages: [{ role: 'user', content: prompt }] })
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー ' + r.status); }
+  const d = await r.json();
+  return (d.choices?.[0]?.message?.content ?? '').replace(/```json\s*/g, '').replace(/```svg\s*/g, '').replace(/```\s*/g, '').trim();
+}
+
+/* ── Generate article ── */
+async function generate() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const st = document.getElementById('gst'), sp = document.getElementById('gst-sp'), msg = document.getElementById('gst-msg'), btn = document.getElementById('gen-btn');
+  st.className = 'gst show run'; sp.style.display = 'block'; msg.textContent = '記事を生成中...（10〜20秒かかります）'; btn.disabled = true;
+  const tops = selIds.length ? selIds.map(id => liveTopics.find(t => t.id === Number(id))).filter(Boolean) : liveTopics.slice(0, 2);
+  const tm = { professional: 'プロフェッショナル・研究者向け', warm: '温かみがある教育者向け', casual: 'カジュアルでSNS向け', bilingual: '日英バイリンガル' };
+  const tone = document.getElementById('tone').value, len = document.getElementById('wlen').value;
+
+  // 各トピックを番号付きで明示 — AIが全件必ず使うよう強調
+  const topicsBlock = tops.map((t, i) =>
+    `【リサーチ${i + 1}】\nタイトル：${t.title}\n出典：${t.src}\n要約：${t.sum}`
+  ).join('\n\n');
+
+  const prompt = `FOR ME NY（インプロ×マインドフルネス×表現芸術を使った体験型プログラムを企業・教育機関に提供する日本の会社）の月次ニュースレター記事を書いてください。
+
+【重要指示】下記リサーチは${tops.length}件あります。本文では必ず${tops.length}件すべての内容・エビデンス・知見を具体的に取り上げて統合してください。1件でも省略した場合は失敗とみなします。
+
+${topicsBlock}
+
+【トーン】${tm[tone]}
+【文字数目安】${len}字（リサーチ${tops.length}件すべてを盛り込むため多少超えても可）
+
+以下のJSON形式のみで返してください（コードブロックなし）：
+{"title":"タイトル（25字以内）","sub":"サブタイトル（40字以内）","lead":"リード文（100〜150字、${tops.length}件すべてに言及）","body":"本文（リサーチ${tops.length}件すべてを各段落で具体的に展開、段落区切りは\\n\\nで）","closing":"締めのメッセージ（45〜65字）"}`;
+  try {
+    const raw = await callOpenAI(prompt, 2500);
+    const p = JSON.parse(raw);
+    if (p.title)   document.getElementById('f-title').value   = p.title;
+    if (p.sub)     document.getElementById('f-sub').value     = p.sub;
+    if (p.lead)    document.getElementById('f-lead').value    = p.lead;
+    if (p.body)    document.getElementById('f-body').value    = (p.body || '').replace(/\\n/g, '\n');
+    if (p.closing) document.getElementById('f-closing').value = p.closing;
+    st.className = 'gst show ok'; sp.style.display = 'none';
+    msg.textContent = `✓ 記事が生成されました（リサーチ${tops.length}件を反映）。自由に編集・微調整できます。`;
+    currentVisualSVG = ''; currentVisualIdx = -1; generatedVisuals = [];
+    document.getElementById('vis-grid').style.display = 'none';
+    document.getElementById('vis-gen-btn').style.display = 'flex';
+    document.getElementById('vis-adjust').classList.remove('show');
+    renderTplThumbs();
+    showRefSection();
+  } catch(e) { st.className = 'gst show err'; sp.style.display = 'none'; msg.textContent = 'エラー：' + e.message; }
+  btn.disabled = false;
+}
+
+async function rewrite(sec) {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const m = { title: 'f-title', sub: 'f-sub', lead: 'f-lead', body: 'f-body', closing: 'f-closing' };
+  const el = document.getElementById(m[sec]), cur = el.value; if (!cur) return;
+  el.disabled = true; el.value = '書き直し中...';
+  try { const t = await callOpenAI(`次の文章を同じ意図を保ちつつ表現を変えて書き直してください。テキストのみ返してください：\n\n${cur}`, 600); el.value = t || cur; }
+  catch(e) { el.value = cur; alert('エラー: ' + e.message); }
+  el.disabled = false;
+}
+async function expandBody() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const el = document.getElementById('f-body'), cur = el.value; if (!cur) return;
+  el.disabled = true; el.value = '拡張中...';
+  try { const t = await callOpenAI(`次の本文を自然に拡張して詳しく豊かな内容にしてください。本文テキストのみ返してください：\n\n${cur}`, 1000); el.value = t || cur; }
+  catch(e) { el.value = cur; alert('エラー: ' + e.message); }
+  el.disabled = false;
+}
+
+/* ── AI微調整（リード文・本文） ── */
+function toggleAdjust(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+async function aiAdjust(sec) {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const fieldId = sec === 'lead' ? 'f-lead' : 'f-body';
+  const inputId = sec + '-adjust-input';
+  const stId    = sec + '-adj-st';
+  const msgId   = sec + '-adj-msg';
+
+  const instruction = document.getElementById(inputId).value.trim();
+  if (!instruction) { alert('指示を入力してください'); return; }
+
+  const currentText = document.getElementById(fieldId).value;
+  if (!currentText) { alert('先に記事を生成してください'); return; }
+
+  const st  = document.getElementById(stId);
+  const msg = document.getElementById(msgId);
+  st.className = 'gst show run'; msg.textContent = '微調整中...';
+
+  const sectionName = sec === 'lead' ? 'リード文' : '本文';
+  const prompt = `以下の${sectionName}を、指示に従って修正してください。
+FOR ME NY（インプロ×マインドフルネス×表現芸術の体験型教育企業）のニュースレター記事の一部です。
+
+【指示】${instruction}
+
+【現在の${sectionName}】
+${currentText}
+
+修正後の${sectionName}テキストのみ返してください（説明・前置き不要）。`;
+  try {
+    const t = await callOpenAI(prompt, sec === 'body' ? 1200 : 400);
+    document.getElementById(fieldId).value = t || currentText;
+    st.className = 'gst show ok'; msg.textContent = '✓ 微調整しました';
+    setTimeout(() => { st.className = 'gst'; }, 2500);
+  } catch(e) {
+    st.className = 'gst show err'; msg.textContent = 'エラー：' + e.message;
+  }
+}
+
+/* ── Generate visuals ── */
+async function generateVisuals() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const title = document.getElementById('f-title').value;
+  const body  = document.getElementById('f-body').value;
+  const lead  = document.getElementById('f-lead').value;
+  if (!title && !body) { alert('先に記事を生成してください（Step②）'); return; }
+
+  const btn = document.getElementById('vis-gen-btn');
+  btn.innerHTML = `<div class="spin"></div><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">ビジュアルを生成中...</span>`;
+
+  const summary = (title + ' ' + lead + ' ' + (body||'').substring(0,300)).substring(0,400);
+  const prompt = `以下の記事に合った図解・イラストをSVGで3パターン作成してください。
+
+記事：「${summary}」
+テーマ：表現芸術、インプロ、マインドフルネス、教育、人と人のつながり、感情・創造性
+
+デザイン要件：
+- viewBox="0 0 540 200" 固定
+- シンプル・ミニマル（FOR ME NYのモノクローム白黒グレー基調）
+- 線・幾何学・フロー・コンセプト図など。背景は白(#FFFFFF)か薄グレー(#F7F5F1)
+- テキストは日本語で簡潔に。font-family指定なし
+- 3パターンは異なるアプローチで
+
+以下のJSONのみで返してください（コードブロックなし）：
+{"visuals":[
+  {"label":"フロー図","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>"},
+  {"label":"コンセプト図","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>"},
+  {"label":"データ図","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>"}
+]}`;
+
+  try {
+    const raw = await callOpenAI(prompt, 3000);
+    const parsed = JSON.parse(raw);
+    generatedVisuals = parsed.visuals || [];
+    if (!generatedVisuals.length) throw new Error('ビジュアルを生成できませんでした');
+    renderVisualGrid();
+  } catch(e) {
+    btn.style.display = 'flex';
+    btn.innerHTML = `<span style="font-size:18px">✦</span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">もう一度生成する</span><span style="font-size:10px;color:#8B2A1A">エラー：${e.message}</span>`;
+  }
+}
+
+function renderVisualGrid() {
+  const grid = document.getElementById('vis-grid');
+  const btn  = document.getElementById('vis-gen-btn');
+  grid.innerHTML = '';
+  grid.style.display = 'grid';
+  btn.style.display = 'none';
+
+  // "なし" カード
+  const noneCard = document.createElement('div');
+  noneCard.className = 'vis-card' + (currentVisualIdx === -2 ? ' on' : '');
+  noneCard.innerHTML = `<div class="vis-thumb" style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--stone)">なし</div><span class="vis-label">ビジュアルなし</span>`;
+  noneCard.onclick = () => { currentVisualIdx = -2; currentVisualSVG = ''; renderVisualGrid(); document.getElementById('vis-adjust').classList.remove('show'); syncPreview(); };
+  grid.appendChild(noneCard);
+
+  generatedVisuals.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'vis-card' + (currentVisualIdx === i ? ' on' : '');
+    card.innerHTML = `<div class="vis-thumb" style="overflow:hidden">${v.svg||''}</div><span class="vis-label">${v.label||'ビジュアル'+(i+1)}</span>`;
+    card.onclick = () => {
+      currentVisualIdx = i; currentVisualSVG = v.svg || '';
+      renderVisualGrid();
+      document.getElementById('vis-adjust').classList.add('show');
+      document.getElementById('vis-adjust-input').value = '';
+      syncPreview();
+    };
+    grid.appendChild(card);
+  });
+
+  // 再生成ボタン
+  const regenDiv = document.createElement('div');
+  regenDiv.style.cssText = 'grid-column:1/-1;';
+  regenDiv.innerHTML = `<button class="btn btn-out btn-sm btn-full" onclick="resetVisuals()">↺ 別のビジュアルを生成</button>`;
+  grid.appendChild(regenDiv);
+}
+
+function resetVisuals() {
+  generatedVisuals = []; currentVisualIdx = -1; currentVisualSVG = '';
+  document.getElementById('vis-grid').style.display = 'none';
+  document.getElementById('vis-gen-btn').style.display = 'flex';
+  document.getElementById('vis-gen-btn').innerHTML = `<span style="font-size:18px">✦</span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">ビジュアルを生成（3案）</span><span style="font-size:10px;color:var(--stone)">記事内容から自動生成 → 選択</span>`;
+  document.getElementById('vis-adjust').classList.remove('show');
+  syncPreview();
+}
+
+/* ── ビジュアル微調整 ── */
+async function adjustVisual() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  if (currentVisualIdx < 0 || !currentVisualSVG) { alert('先にビジュアルを選択してください'); return; }
+  const instruction = document.getElementById('vis-adjust-input').value.trim();
+  if (!instruction) { alert('修正の指示を入力してください'); return; }
+
+  const st  = document.getElementById('vis-adj-st');
+  const msg = document.getElementById('vis-adj-msg');
+  st.className = 'gst show run'; msg.textContent = '図解を更新中...';
+
+  // 記事のコンテキストを取得してプロンプトに組み込む
+  const articleTitle = document.getElementById('f-title').value || '';
+  const articleBody  = (document.getElementById('f-body').value || '').substring(0, 200);
+
+  const prompt = `あなたはSVG図解の専門家です。以下のSVGを指示に従って正確に修正してください。
+
+## 修正指示
+${instruction}
+
+## この図解が表す記事のテーマ
+タイトル：${articleTitle}
+内容：${articleBody}
+
+## 現在のSVGコード
+${currentVisualSVG}
+
+## 修正の手順
+1. 現在のSVGの構造（要素の種類・座標・テキスト）を把握する
+2. 指示内容を具体的にどう変えるか計画する
+3. 変更する要素と変更しない要素を明確に区別する
+4. 座標・サイズ・テキストの整合性を確認しながら修正する
+
+## 必須要件
+- viewBox="0 0 540 200" は絶対に変えない
+- 背景色：白(#FFFFFF)または薄グレー(#F7F5F1)のみ
+- テキストカラー：黒(#0F0F0F〜#3A3733)またはグレー(#8A8279)
+- 線・枠：グレー系(#C4BFB6〜#0F0F0F)のみ
+- font-family属性は書かない（システムフォントを使用）
+- テキストが枠からはみ出さないよう座標を調整
+- 日本語テキストはそのまま維持
+
+修正後のSVGコードのみ返してください。説明・前置き・コードブロック記号は不要です。`;
+
+  try {
+    const raw = await callOpenAI(prompt, 2000);
+    const match = raw.match(/<svg[\s\S]*?<\/svg>/i);
+    const newSVG = match ? match[0] : raw;
+    if (!newSVG.includes('<svg')) throw new Error('SVGの生成に失敗しました。もう一度お試しください。');
+    currentVisualSVG = newSVG;
+    if (generatedVisuals[currentVisualIdx]) generatedVisuals[currentVisualIdx].svg = newSVG;
+    renderVisualGrid();
+    syncPreview();
+    st.className = 'gst show ok'; msg.textContent = '✓ 更新しました';
+    setTimeout(() => { st.className = 'gst'; }, 3000);
+  } catch(e) {
+    st.className = 'gst show err'; msg.textContent = 'エラー：' + e.message;
+  }
+}
+
+// クイック調整ボタン用
+function quickAdjust(instruction) {
+  document.getElementById('vis-adjust-input').value = instruction;
+  adjustVisual();
+}
+
+/* ════════════════════════════════
+   PHOTO GENERATION STATE
+════════════════════════════════ */
+let currentPhotoStyle = 'workshop';
+let currentPhotoURL   = '';
+let lastPhotoPrompt   = '';
+let currentVisualMode = 'diagram'; // 'diagram' | 'photo'
+
+/* ── Tab switch ── */
+function switchVisTab(tab) {
+  currentVisualMode = tab;
+  document.getElementById('vtab-diagram').style.background = tab === 'diagram' ? 'var(--black)' : 'var(--white)';
+  document.getElementById('vtab-diagram').style.color      = tab === 'diagram' ? 'var(--white)' : 'var(--stone)';
+  document.getElementById('vtab-photo').style.background   = tab === 'photo'   ? 'var(--black)' : 'var(--white)';
+  document.getElementById('vtab-photo').style.color        = tab === 'photo'   ? 'var(--white)' : 'var(--stone)';
+  document.getElementById('vis-panel-diagram').style.display = tab === 'diagram' ? 'block' : 'none';
+  document.getElementById('vis-panel-photo').style.display   = tab === 'photo'   ? 'block' : 'none';
+
+  // 写真タブに切り替えた時はSVGビジュアルをクリア、写真タブではSVGなし
+  if (tab === 'photo') {
+    // 写真が既に選ばれていればそちらを反映、なければそのまま
+  } else {
+    // 図解タブに戻った時は写真URLを一時退避してプレビューに図解を反映
+    syncPreview();
+  }
+  syncPreview();
+}
+
+/* ── Photo style ── */
+function selectPhotoStyle(el, style) {
+  document.querySelectorAll('.photo-style-opt').forEach(v => v.classList.remove('on'));
+  el.classList.add('on');
+  currentPhotoStyle = style;
+}
+
+/* ── Generate photo (DALL-E 3) ── */
+async function generatePhoto() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const title = document.getElementById('f-title').value;
+  const body  = document.getElementById('f-body').value;
+  const lead  = document.getElementById('f-lead').value;
+  if (!title && !body) { alert('先に記事を生成してください（Step②）'); return; }
+
+  const btn = document.getElementById('photo-gen-btn');
+  btn.innerHTML = `<div class="spin"></div><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">写真を生成中... (10〜30秒)</span>`;
+  btn.style.pointerEvents = 'none';
+
+  const summary = (title + ' ' + lead + ' ' + (body||'').substring(0, 200)).substring(0, 350);
+  const customPrompt = document.getElementById('photo-custom-prompt').value.trim();
+
+  const stylePrompts = {
+    workshop: `A warm, candid photograph of people engaged in creative workshop activities — improv theater, group discussion, expressive arts. Soft natural light, wooden floors, minimalist space. People are diverse, focused, connected. Shot on film, slightly warm tone.`,
+    nature:   `A serene, minimalist fine-art photograph evoking mindfulness and inner calm — morning light through leaves, still water, open space, gentle shadows. No people. Clean, contemplative, elegant. Shot on medium format film, muted warm tones.`,
+    abstract: `A sophisticated abstract fine-art photograph — light patterns, geometric shadows, paper textures, layered transparencies. Monochrome or muted earth tones. Evoking creativity, expression, and human connection. Editorial quality.`,
+    office:   `A quiet, elegant photograph of a modern educational or corporate learning environment — open space, natural light, people collaborating thoughtfully. Japanese minimalist aesthetic. Warm neutral tones, documentary style.`,
+  };
+
+  const baseStyle = stylePrompts[currentPhotoStyle] || stylePrompts.workshop;
+  const articleContext = `The image is for a newsletter article about: "${summary}"`;
+  const custom = customPrompt ? `Additional direction: ${customPrompt}` : '';
+  const finalPrompt = `${baseStyle} ${articleContext} ${custom} Style: editorial photography, high quality, suitable for a professional Japanese education company newsletter. No text overlays. Aspect ratio 16:9.`.trim();
+
+  lastPhotoPrompt = finalPrompt;
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: finalPrompt,
+        n: 1,
+        size: '1792x1024',
+        quality: 'standard',
+        response_format: 'url',
+      })
+    });
+
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.error?.message || 'DALL-E APIエラー ' + r.status);
+    }
+
+    const data = await r.json();
+    const imageURL = data.data?.[0]?.url;
+    if (!imageURL) throw new Error('画像URLを取得できませんでした');
+
+    currentPhotoURL = imageURL;
+    renderPhotoGrid(imageURL);
+
+  } catch(e) {
+    btn.style.pointerEvents = '';
+    btn.innerHTML = `<span style="font-size:18px">📷</span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">もう一度生成する</span><span style="font-size:10px;color:#8B2A1A">エラー：${e.message}</span>`;
+  }
+}
+
+function renderPhotoGrid(url) {
+  const btn = document.getElementById('photo-gen-btn');
+  const grid = document.getElementById('photo-grid');
+  const cards = document.getElementById('photo-cards');
+
+  btn.style.display = 'none';
+  grid.style.display = 'block';
+  cards.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.className = 'photo-card on';
+  card.innerHTML = `
+    <img class="photo-img" src="${url}" alt="生成された写真" loading="lazy">
+    <span class="photo-label">✓ 選択済み — クリックで選択/解除</span>`;
+  card.onclick = () => {
+    const isOn = card.classList.contains('on');
+    if (isOn) {
+      card.classList.remove('on');
+      card.querySelector('.photo-label').textContent = 'クリックで選択';
+      currentPhotoURL = '';
+    } else {
+      card.classList.add('on');
+      card.querySelector('.photo-label').textContent = '✓ 選択済み — クリックで選択/解除';
+      currentPhotoURL = url;
+    }
+    syncPreview();
+  };
+  cards.appendChild(card);
+
+  document.getElementById('photo-adjust').classList.add('show');
+  syncPreview();
+}
+
+function regeneratePhoto() {
+  currentPhotoURL = '';
+  document.getElementById('photo-cards').innerHTML = '';
+  document.getElementById('photo-grid').style.display = 'none';
+  document.getElementById('photo-adjust').classList.remove('show');
+  const btn = document.getElementById('photo-gen-btn');
+  btn.style.display = 'flex';
+  btn.style.pointerEvents = '';
+  btn.innerHTML = `<span style="font-size:18px">📷</span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">写真を生成</span><span style="font-size:10px;color:var(--stone)">DALL-E 3 で生成 → 選択</span>`;
+  syncPreview();
+}
+
+/* ── Adjust photo ── */
+async function adjustPhoto() {
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const instruction = document.getElementById('photo-adjust-input').value.trim();
+  if (!instruction) { alert('修正の指示を入力してください'); return; }
+
+  const st  = document.getElementById('photo-adj-st');
+  const msg = document.getElementById('photo-adj-msg');
+  st.className = 'gst show run'; msg.textContent = '写真を再生成中...';
+
+  // 指示を元のプロンプトに組み込んで再生成
+  const newPrompt = lastPhotoPrompt + ` IMPORTANT MODIFICATION: ${instruction}`;
+  lastPhotoPrompt = newPrompt;
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: newPrompt.substring(0, 4000),
+        n: 1,
+        size: '1792x1024',
+        quality: 'standard',
+        response_format: 'url',
+      })
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー'); }
+    const data = await r.json();
+    const imageURL = data.data?.[0]?.url;
+    if (!imageURL) throw new Error('画像URLを取得できませんでした');
+    currentPhotoURL = imageURL;
+    renderPhotoGrid(imageURL);
+    st.className = 'gst show ok'; msg.textContent = '✓ 更新しました';
+    setTimeout(() => { st.className = 'gst'; }, 2500);
+  } catch(e) {
+    st.className = 'gst show err'; msg.textContent = 'エラー：' + e.message;
+  }
+}
+
+/* ── Override syncPreview to handle photo ── */
+function syncPreview() {
+  const title   = document.getElementById('f-title')?.value   || 'タイトルを入力してください';
+  const sub     = document.getElementById('f-sub')?.value     || '';
+  const lead    = document.getElementById('f-lead')?.value    || 'リード文を入力してください。';
+  const body    = document.getElementById('f-body')?.value    || '本文を入力してください。';
+  const closing = document.getElementById('f-closing')?.value || '締めの言葉を入力してください。';
+  const month   = getMonthLabel();
+
+  const headerSVG = TPL[currentTpl]?.(currentPal, title, sub, month) || TPL.classic(currentPal, title, sub, month);
+  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+  const tagsHTML  = [...activeTags].map(tag => `<span class="nl-tag">${tag}</span>`).join('');
+  // ビジュアル：タブに応じてSVG図解 or 写真を使用
+  let visHTML = '';
+  if (currentVisualMode === 'photo' && currentPhotoURL) {
+    visHTML = `<div class="nl-visual-zone"><img src="${currentPhotoURL}" alt="記事ビジュアル" style="width:100%;display:block;max-height:280px;object-fit:cover"></div>`;
+  } else if (currentVisualMode === 'diagram' && currentVisualSVG) {
+    visHTML = `<div class="nl-visual-zone">${currentVisualSVG}</div>`;
+  }
+
+  // 参考文献
+  const showRefs = document.getElementById('show-refs')?.checked ?? true;
+  const refsHTML = buildRefsHTML(showRefs);
+
+  document.getElementById('nl-preview').innerHTML = `
+    <div class="nl-header-zone">${headerSVG}</div>
+    <div class="nl-body">
+      ${tagsHTML ? `<div class="nl-tags">${tagsHTML}</div>` : ''}
+      <div class="nl-overline">今月のトピック</div>
+      <div class="nl-lead">${lead}</div>
+      ${visHTML}
+      <div class="nl-text">${bodyHTML}</div>
+      <div class="nl-rule"></div>
+      <div class="nl-pullquote"><p>${closing}</p></div>
+      ${refsHTML}
+    </div>
+    <div class="nl-footer">
+      <span class="nl-footer-logo">FOR ME <em>NY</em></span>
+      <span style="font-size:10px;color:var(--stone)"><a href="https://formenewyork.com" style="color:var(--stone);text-decoration:none">formenewyork.com</a></span>
+    </div>`;
+
+  const n = (lead + body + closing).length;
+  document.getElementById('char-info').textContent = `${n}字 ／ 約${Math.ceil(n/400)}分`;
+  document.getElementById('art-info').innerHTML = `文字数: ${n}字<br>推定読了: ${Math.ceil(n/400)}分`;
+}
+
+/* ── Build WP HTML ── */
+function buildWP() {
+  const title   = document.getElementById('f-title').value   || 'タイトル未設定';
+  const sub     = document.getElementById('f-sub').value     || '';
+  const lead    = document.getElementById('f-lead').value    || '';
+  const body    = document.getElementById('f-body').value    || '';
+  const closing = document.getElementById('f-closing').value || '';
+  const month   = getMonthLabel();
+  const p       = currentPal;
+
+  const headerSVG = (TPL[currentTpl]?.(p, title, sub, month) || TPL.classic(p, title, sub, month))
+    .replace(/style="display:block;width:100%"/g, 'style="display:block;width:100%;max-width:540px"');
+  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => `<p style="font-size:14px;line-height:1.88;color:#3A3733;margin-bottom:10px">${l}</p>`).join('\n');
+  const tagsHTML  = [...activeTags].map(tag => `<span style="display:inline-block;padding:2px 8px;border:1px solid #C4BFB6;font-size:9px;color:#8A8279;letter-spacing:.07em;text-transform:uppercase;margin:0 4px 4px 0">${tag}</span>`).join('');
+  // ビジュアル：タブに応じてSVG or 写真
+  let visHTML = '';
+  if (currentVisualMode === 'photo' && currentPhotoURL) {
+    visHTML = `<div style="margin:0 0 22px;width:100%"><img src="${currentPhotoURL}" alt="記事ビジュアル" style="width:100%;display:block;max-height:300px;object-fit:cover"></div>`;
+  } else if (currentVisualMode === 'diagram' && currentVisualSVG) {
+    visHTML = `<div style="margin:0 0 22px;width:100%">${currentVisualSVG}</div>`;
+  }
+
+  const showRefs = document.getElementById('show-refs')?.checked ?? true;
+  const refsWP = buildRefsWP(showRefs);
+
+  const wp = `<!-- FOR ME NY ${month} ニュースレター -->
+<div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #C4BFB6;font-family:'DM Sans',Helvetica,sans-serif">
+
+${headerSVG}
+
+<div style="padding:30px 34px">
+  ${tagsHTML ? `<div style="margin-bottom:16px">${tagsHTML}</div>` : ''}
+  <div style="font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8A8279;margin-bottom:11px">今月のトピック</div>
+  <div style="font-size:13px;line-height:1.85;padding-left:15px;border-left:2px solid #0F0F0F;margin-bottom:20px;color:#3A3733">${lead}</div>
+  ${visHTML}
+  ${bodyHTML}
+  <div style="height:1px;background:#C4BFB6;margin:22px 0"></div>
+  <div style="padding:16px 18px;border-left:2px solid #B89040;background:#F7F5F1">
+    <p style="font-family:Georgia,serif;font-size:16px;font-style:italic;font-weight:300;line-height:1.55;color:#0F0F0F;margin:0">${closing}</p>
+  </div>
+  ${refsWP}
+</div>
+
+<div style="padding:13px 34px;border-top:1px solid #C4BFB6;display:flex;align-items:center;justify-content:space-between;background:#F7F5F1">
+  <span style="font-family:Georgia,serif;font-size:13px;font-weight:300;letter-spacing:.12em;text-transform:uppercase">FOR ME <span style="color:#8A8279">NY</span></span>
+  <span style="font-size:10px;color:#8A8279"><a href="https://formenewyork.com" style="color:#8A8279;text-decoration:none">formenewyork.com</a></span>
+</div>
+
+</div>`;
+  document.getElementById('wp-html').textContent = wp;
+}
+
+function renderChecklist() {
+  const hasBody = document.getElementById('f-body').value.length > 10;
+  const cl = document.getElementById('checklist'); cl.innerHTML = '';
+  [{ done: selIds.length > 0, l: 'トピック選択',   s: selIds.length ? selIds.length + '件選択済み' : 'Step①でトピックを選んでください' },
+   { done: hasBody,           l: '記事生成',       s: hasBody ? '記事が作成されました ✓' : 'Step②で記事を生成してください' },
+   { done: previewDone,       l: 'ビジュアル確認', s: previewDone ? 'デザインを確認しました ✓' : 'Step③でビジュアルを設定してください' }
+  ].forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'ci ' + (c.done ? 'done' : 'pend');
+    d.innerHTML = `<div class="ci-c">${c.done ? '✓' : i+1}</div><div><div class="ci-l">${c.l}</div><div class="ci-s">${c.s}</div></div>`;
+    cl.appendChild(d);
+  });
+}
+
+/* ════════════════════════════════
+   REFERENCES（参考文献）
+════════════════════════════════ */
+function getSelectedTopics() {
+  return selIds.map(id => liveTopics.find(t => t.id === Number(id))).filter(Boolean);
+}
+
+// URLキャッシュ（トピックid → url）— searchMore/INITIAL_TOPICSで設定済み
+const topicUrls = {};
+
+function showRefSection() {
+  const sec  = document.getElementById('ref-section');
+  const list = document.getElementById('ref-list');
+  const status = document.getElementById('ref-search-status');
+  if (!sec || !list) return;
+  const tops = getSelectedTopics();
+  if (!tops.length) return;
+
+  sec.style.display = 'block';
+  if (status) status.style.display = 'none';
+
+  // URLはINITIAL_TOPICS/searchMoreで設定済み → そのまま表示
+  renderRefList(tops, list, false);
+}
+
+function renderRefList(tops, listEl, loading) {
+  listEl.innerHTML = tops.map((t, i) => {
+    const url = topicUrls[t.id];
+    const isLoading = loading && !url;
+    const linkPart = url
+      ? `<a href="${url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-top:2px">
+           <span>元記事を確認 →</span>
+         </a>`
+      : isLoading
+        ? `<span style="font-size:10px;color:var(--stone);opacity:.6">URLを検索中...</span>`
+        : `<a href="https://scholar.google.com/scholar?q=${encodeURIComponent(t.title+' '+t.src)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--stone);text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-top:2px">Google Scholar で検索 ↗</a>`;
+    return `<div style="display:flex;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--light)">
+      <span style="color:var(--stone);flex-shrink:0;font-weight:600;font-size:12px">[${i+1}]</span>
+      <div>
+        <div style="font-weight:600;color:var(--ink);line-height:1.4;margin-bottom:2px">${t.title}</div>
+        <div style="font-size:10px;color:var(--stone);font-style:italic">${t.src}　（${t.lang}）</div>
+        ${linkPart}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildRefsHTML(show) {
+  if (!show) return '';
+  const tops = getSelectedTopics();
+  if (!tops.length) return '';
+  const items = tops.map((t, i) => {
+    const url = topicUrls[t.id];
+    const linkPart = url
+      ? `<a href="${url}" target="_blank" rel="noopener" style="color:#B89040;font-size:10px;text-decoration:none"> → 元記事を確認</a>`
+      : `<a href="https://scholar.google.com/scholar?q=${encodeURIComponent(t.title+' '+t.src)}" target="_blank" rel="noopener" style="color:#8A8279;font-size:10px;text-decoration:none"> → Google Scholar で検索</a>`;
+    return `<div style="display:flex;gap:8px;margin-bottom:7px;font-size:11px;line-height:1.6">
+      <span style="flex-shrink:0;font-weight:700;color:#3A3733">[${i+1}]</span>
+      <span>
+        <span style="color:#3A3733;font-weight:500">${t.title}</span>
+        <em style="color:#8A8279">　${t.src}</em>
+        ${linkPart}
+      </span>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:22px;padding-top:16px;border-top:1px solid #EDEBE7">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#8A8279;margin-bottom:10px">参考文献</div>
+    ${items}
+  </div>`;
+}
+
+function buildRefsWP(show) {
+  if (!show) return '';
+  const tops = getSelectedTopics();
+  if (!tops.length) return '';
+  const items = tops.map((t, i) => {
+    const url = topicUrls[t.id];
+    const href = url || `https://scholar.google.com/scholar?q=${encodeURIComponent(t.title+' '+t.src)}`;
+    const linkLabel = url ? '元記事を確認 →' : 'Google Scholar で検索 →';
+    return `<div style="display:flex;gap:8px;margin-bottom:7px;font-size:11px;line-height:1.6;color:#8A8279">
+      <span style="flex-shrink:0;font-weight:700;color:#3A3733">[${i+1}]</span>
+      <span>
+        <span style="color:#3A3733;font-weight:500">${t.title}</span>
+        <em>　${t.src}</em>
+        　<a href="${href}" target="_blank" rel="noopener" style="color:#B89040;font-size:10px;text-decoration:none">${linkLabel}</a>
+      </span>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:22px;padding-top:16px;border-top:1px solid #EDEBE7">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#8A8279;margin-bottom:10px">参考文献</div>
+    ${items}
+  </div>`;
+}
+
+function copyWP() {
+  navigator.clipboard.writeText(document.getElementById('wp-html').textContent).then(() => {
+    const b = document.getElementById('cpy-btn');
+    b.textContent = 'コピー完了！';
+    setTimeout(() => b.textContent = 'コピー', 2500);
+  });
+}
+</script>
+</body>
+</html>

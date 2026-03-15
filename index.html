@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
+<html lang="ja"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FOR ME NY — Newsletter Creator</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
 <style>
 :root {
   --black: #0F0F0F;
@@ -315,7 +313,7 @@ a { color: var(--gold); }
   <div class="hdr-logo">FOR ME <em>NY</em></div>
   <div style="display:flex;align-items:center;gap:8px">
     <span class="hdr-badge" id="hdr-badge">2026年3月号</span>
-    <button class="hdr-gear" id="hdr-gear" onclick="openGhModal()" title="GitHub自動デプロイ設定">⚙</button>
+    <button class="hdr-gear configured" id="hdr-gear" onclick="openGhModal()" title="GitHub自動デプロイ設定">⚙</button>
   </div>
 </header>
 
@@ -325,7 +323,7 @@ a { color: var(--gold); }
     <div class="gh-modal-title">GitHub 自動デプロイ設定</div>
     <div class="gh-modal-desc">
       設定すると「🚀 GitHubに保存」ボタン1つでアプリが自動更新されます。<br>
-      <a href="https://github.com/settings/tokens/new?scopes=repo&description=formeny-newsletter" target="_blank" style="color:var(--gold)">← ここでGitHubトークンを発行（repoスコープを選択）</a>
+      <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=formeny-newsletter" target="_blank" style="color:var(--gold)">← ここでGitHubトークンを発行（repoスコープを選択）</a>
     </div>
 
     <div class="gh-field">
@@ -346,7 +344,7 @@ a { color: var(--gold); }
       <button class="btn btn-out btn-sm" onclick="testGhConnection()">接続テスト</button>
       <button class="btn btn-out btn-sm" onclick="closeGhModal()">閉じる</button>
     </div>
-    <div class="gh-status" id="gh-config-status"></div>
+    <div class="gh-status ok" id="gh-config-status">✓ 設定を保存しました</div>
   </div>
 </div>
 
@@ -361,16 +359,16 @@ a { color: var(--gold); }
 
 <div class="shell">
   <nav class="stabs">
-    <button class="st on" data-p="1" onclick="goPage(1)"><div class="st-n">1</div>トピック</button>
-    <button class="st" data-p="2" onclick="goPage(2)"><div class="st-n">2</div>記事生成</button>
-    <button class="st" data-p="3" onclick="goPage(3)"><div class="st-n">3</div>ビジュアル</button>
-    <button class="st" data-p="4" onclick="goPage(4)"><div class="st-n">4</div>掲載</button>
+    <button class="st done" data-p="1" onclick="goPage(1)"><div class="st-n">✓</div>トピック</button>
+    <button class="st done" data-p="2" onclick="goPage(2)"><div class="st-n">✓</div>記事生成</button>
+    <button class="st done" data-p="3" onclick="goPage(3)"><div class="st-n">✓</div>ビジュアル</button>
+    <button class="st on" data-p="4" onclick="goPage(4)"><div class="st-n">4</div>掲載</button>
   </nav>
 
   <div class="pages">
 
     <!-- ═══ PAGE 1: TOPICS ═══ -->
-    <div class="page on" id="page1">
+    <div class="page" id="page1">
       <div class="two-col">
 
         <!-- 左：テーマ選択 + 検索 + 結果リスト -->
@@ -382,23 +380,17 @@ a { color: var(--gold); }
             <div class="pdesc">テーマを選ぶか、キーワードを入力して検索すると実在する記事・論文が表示されます。</div>
 
             <div class="slbl" style="margin-bottom:7px">テーマを選択（複数可）</div>
-            <div id="theme-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
+            <div id="theme-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"><div class="tag-chip on" data-theme="マインドフルネス">マインドフルネス</div><div class="tag-chip on" data-theme="インプロ">インプロ</div><div class="tag-chip on" data-theme="表現芸術">表現芸術</div><div class="tag-chip" data-theme="体験型学習">体験型学習</div><div class="tag-chip" data-theme="AI×教育">AI×教育</div><div class="tag-chip" data-theme="感情知性">感情知性</div><div class="tag-chip" data-theme="心理的安全性">心理的安全性</div><div class="tag-chip" data-theme="創造性">創造性</div><div class="tag-chip" data-theme="リーダーシップ">リーダーシップ</div></div>
 
             <div class="slbl" style="margin-bottom:5px">キーワードで検索（任意）</div>
             <div style="position:relative;margin-bottom:12px">
-              <input type="text" id="keyword-input"
-                class="fi"
-                placeholder="例：即興演劇 コミュニケーション、心理的安全性 職場、expressive arts therapy..."
-                style="padding-right:36px"
-                onkeydown="if(event.key==='Enter')searchMore()">
-              <button onclick="document.getElementById('keyword-input').value=''"
-                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--stone);font-size:14px;line-height:1;padding:2px"
-                title="クリア">✕</button>
+              <input type="text" id="keyword-input" class="fi" placeholder="例：即興演劇 コミュニケーション、心理的安全性 職場、expressive arts therapy..." style="padding-right:36px" onkeydown="if(event.key==='Enter')searchMore()">
+              <button onclick="document.getElementById('keyword-input').value=''" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--stone);font-size:14px;line-height:1;padding:2px" title="クリア">✕</button>
             </div>
 
             <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
-              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-ja" checked style="accent-color:var(--black)"> 日本語</label>
-              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-en" checked style="accent-color:var(--black)"> 英語</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-ja" checked="" style="accent-color:var(--black)"> 日本語</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="lang-en" checked="" style="accent-color:var(--black)"> 英語</label>
             </div>
 
             <button class="btn btn-blk btn-full" id="search-btn" onclick="searchMore()">
@@ -540,7 +532,7 @@ a { color: var(--gold); }
               <span class="asec-lbl">参考文献・リサーチ出典</span>
               <div style="display:flex;gap:5px;align-items:center">
                 <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--stone);cursor:pointer">
-                  <input type="checkbox" id="show-refs" checked onchange="syncPreview()" style="accent-color:var(--black)">
+                  <input type="checkbox" id="show-refs" checked="" onchange="syncPreview()" style="accent-color:var(--black)">
                   記事に表示
                 </label>
               </div>
@@ -567,8 +559,23 @@ a { color: var(--gold); }
         <!-- Preview -->
         <div class="cl cl-r preview-bg" style="display:flex;flex-direction:column;align-items:center;padding:22px 14px;">
           <div style="font-size:9px;color:var(--stone);margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase">Preview</div>
-          <div class="nl-wrap" id="nl-preview"></div>
-          <div style="font-size:10px;color:var(--stone);margin-top:10px;text-align:center" id="char-info"></div>
+          <div class="nl-wrap" id="nl-preview">
+    <div class="nl-header-zone"><svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="148" fill="#0F0F0F"></rect><text x="28" y="32" font-size="8" fill="#FFFFFF" opacity=".45" font-family="sans-serif" font-weight="600" letter-spacing="3">2026年3月号 · FOR ME NY</text><line x1="28" y1="40" x2="512" y2="40" stroke="#B89040" stroke-width="1"></line><text x="28" y="83" font-size="28" fill="#FFFFFF" font-family="Georgia,serif" font-weight="300">タイトルを入力してください</text><text x="28" y="106" font-size="11" fill="#FFFFFF" opacity=".5" font-family="sans-serif" font-weight="300">サブタイトル</text><line x1="28" y1="128" x2="512" y2="128" stroke="#FFFFFF" stroke-width=".4" opacity=".2"></line></svg></div>
+    <div class="nl-body">
+      <div class="nl-tags"><span class="nl-tag">マインドフルネス</span><span class="nl-tag">インプロ</span><span class="nl-tag">表現芸術</span></div>
+      <div class="nl-overline">今月のトピック</div>
+      <div class="nl-lead">リード文を入力してください。</div>
+      
+      <div class="nl-text"><p>本文を入力してください。</p></div>
+      <div class="nl-rule"></div>
+      <div class="nl-pullquote"><p>締めの言葉を入力してください。</p></div>
+      
+    </div>
+    <div class="nl-footer">
+      <span class="nl-footer-logo">FOR ME <em>NY</em></span>
+      <span style="font-size:10px;color:var(--stone)"><a href="https://formenewyork.com" style="color:var(--stone);text-decoration:none">formenewyork.com</a></span>
+    </div></div>
+          <div style="font-size:10px;color:var(--stone);margin-top:10px;text-align:center" id="char-info">41字 ／ 約1分</div>
         </div>
         <!-- Controls -->
         <div class="cl-side">
@@ -579,19 +586,19 @@ a { color: var(--gold); }
               <div class="vp-title">ヘッダーテンプレート</div>
               <div class="tpl-grid" id="tpl-grid">
                 <div class="tpl-opt on" data-t="classic" onclick="setTpl(this,'classic')">
-                  <div class="tpl-thumb" id="th-classic"></div>
+                  <div class="tpl-thumb" id="th-classic"><svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="148" fill="#0F0F0F"></rect><text x="28" y="32" font-size="8" fill="#FFFFFF" opacity=".45" font-family="sans-serif" font-weight="600" letter-spacing="3">2026年3月号 · FOR ME NY</text><line x1="28" y1="40" x2="512" y2="40" stroke="#B89040" stroke-width="1"></line><text x="28" y="83" font-size="28" fill="#FFFFFF" font-family="Georgia,serif" font-weight="300">タイトル</text><text x="28" y="106" font-size="11" fill="#FFFFFF" opacity=".5" font-family="sans-serif" font-weight="300">サブタイトル</text><line x1="28" y1="128" x2="512" y2="128" stroke="#FFFFFF" stroke-width=".4" opacity=".2"></line></svg></div>
                   <span class="tpl-name">クラシック</span>
                 </div>
                 <div class="tpl-opt" data-t="split" onclick="setTpl(this,'split')">
-                  <div class="tpl-thumb" id="th-split"></div>
+                  <div class="tpl-thumb" id="th-split"><svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="252" height="148" fill="#0F0F0F"></rect><rect x="252" y="0" width="288" height="148" fill="#B89040"></rect><text x="24" y="48" font-size="20" fill="#FFFFFF" font-family="Georgia,serif" font-weight="300" letter-spacing="2">FOR ME NY</text><text x="24" y="72" font-size="8" fill="#FFFFFF" opacity=".4" font-family="sans-serif" letter-spacing="2">2026年3月号</text><line x1="24" y1="88" x2="202" y2="88" stroke="#FFFFFF" stroke-width=".4" opacity=".25"></line><text x="266" y="56" font-size="18" fill="rgba(255,255,255,.92)" font-family="Georgia,serif" font-weight="300">タイトル</text><text x="266" y="80" font-size="10" fill="rgba(255,255,255,.6)" font-family="sans-serif" font-weight="300"></text></svg></div>
                   <span class="tpl-name">スプリット</span>
                 </div>
                 <div class="tpl-opt" data-t="minimal" onclick="setTpl(this,'minimal')">
-                  <div class="tpl-thumb" id="th-minimal"></div>
+                  <div class="tpl-thumb" id="th-minimal"><svg viewBox="0 0 540 112" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="112" fill="#F7F5F1"></rect><line x1="28" y1="30" x2="512" y2="30" stroke="#C4BFB6" stroke-width=".5"></line><text x="270" y="24" font-size="7" fill="#8A8279" font-family="sans-serif" font-weight="600" letter-spacing="4" text-anchor="middle">2026年3月号 · FOR ME NY</text><text x="270" y="68" font-size="26" fill="#0F0F0F" font-family="Georgia,serif" font-weight="300" text-anchor="middle">タイトル</text><text x="270" y="88" font-size="11" fill="#8A8279" font-family="sans-serif" font-weight="300" text-anchor="middle"></text><line x1="28" y1="100" x2="512" y2="100" stroke="#C4BFB6" stroke-width=".5"></line></svg></div>
                   <span class="tpl-name">ミニマル</span>
                 </div>
                 <div class="tpl-opt" data-t="frame" onclick="setTpl(this,'frame')">
-                  <div class="tpl-thumb" id="th-frame"></div>
+                  <div class="tpl-thumb" id="th-frame"><svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"><rect width="540" height="148" fill="#0F0F0F"></rect><rect x="9" y="9" width="522" height="130" fill="none" stroke="#B89040" stroke-width="1"></rect><rect x="15" y="15" width="510" height="118" fill="none" stroke="#B89040" stroke-width=".3" opacity=".35"></rect><text x="270" y="44" font-size="7" fill="#FFFFFF" opacity=".35" font-family="sans-serif" font-weight="600" letter-spacing="3" text-anchor="middle">FOR ME NY · 2026年3月号</text><text x="270" y="84" font-size="26" fill="#FFFFFF" font-family="Georgia,serif" font-weight="300" text-anchor="middle">タイトル</text><text x="270" y="107" font-size="11" fill="#FFFFFF" opacity=".45" font-family="sans-serif" font-weight="300" text-anchor="middle"></text></svg></div>
                   <span class="tpl-name">フレーム</span>
                 </div>
               </div>
@@ -602,7 +609,7 @@ a { color: var(--gold); }
             <!-- Color palette — FOR ME NY準拠 12色 -->
             <div style="margin-bottom:16px">
               <div class="vp-title">カラーパレット</div>
-              <div class="palette-grid" id="palette-grid"></div>
+              <div class="palette-grid" id="palette-grid"><div><div class="pal on" title="ブラック" data-id="p0" style="background: rgb(15, 15, 15); --ck: #fff;"></div><div class="pal-label">ブラック</div></div><div><div class="pal" title="クリーム白" data-id="p1" style="background: rgb(247, 245, 241); border: 2px solid var(--mid); --ck: #000;"></div><div class="pal-label">クリーム白</div></div><div><div class="pal" title="ウォームグレー" data-id="p2" style="background: rgb(74, 69, 64); --ck: #000;"></div><div class="pal-label">ウォームグレー</div></div><div><div class="pal" title="ゴールド" data-id="p3" style="background: rgb(184, 144, 64); --ck: #fff;"></div><div class="pal-label">ゴールド</div></div><div><div class="pal" title="チャコール" data-id="p4" style="background: rgb(42, 37, 32); --ck: #000;"></div><div class="pal-label">チャコール</div></div><div><div class="pal" title="ライトベージュ" data-id="p5" style="background: rgb(237, 232, 224); border: 2px solid var(--mid); --ck: #000;"></div><div class="pal-label">ライトベージュ</div></div><div><div class="pal" title="セージグリーン" data-id="p6" style="background: rgb(78, 95, 69); --ck: #000;"></div><div class="pal-label">セージグリーン</div></div><div><div class="pal" title="オフホワイト" data-id="p7" style="background: rgb(253, 250, 244); border: 2px solid var(--mid); --ck: #000;"></div><div class="pal-label">オフホワイト</div></div><div><div class="pal" title="スカイブルー" data-id="p8" style="background: rgb(234, 244, 251); border: 2px solid var(--mid); --ck: #000;"></div><div class="pal-label">スカイブルー</div></div><div><div class="pal" title="ミストブルー" data-id="p9" style="background: rgb(214, 232, 245); border: 2px solid var(--mid); --ck: #000;"></div><div class="pal-label">ミストブルー</div></div><div><div class="pal" title="ダスティブルー" data-id="p10" style="background: rgb(94, 143, 170); --ck: #fff;"></div><div class="pal-label">ダスティブルー</div></div><div><div class="pal" title="ディープブルー" data-id="p11" style="background: rgb(30, 61, 92); --ck: #000;"></div><div class="pal-label">ディープブルー</div></div></div>
             </div>
 
             <div class="div"></div>
@@ -712,11 +719,11 @@ a { color: var(--gold); }
             <!-- Tags -->
             <div style="margin-bottom:16px">
               <div class="vp-title">タグバッジ</div>
-              <div class="tag-chips" id="tag-chips"></div>
+              <div class="tag-chips" id="tag-chips"><div class="tag-chip on" data-tag="マインドフルネス">マインドフルネス</div><div class="tag-chip on" data-tag="インプロ">インプロ</div><div class="tag-chip on" data-tag="表現芸術">表現芸術</div><div class="tag-chip" data-tag="体験型学習">体験型学習</div><div class="tag-chip" data-tag="AI×教育">AI×教育</div><div class="tag-chip" data-tag="感情知性">感情知性</div><div class="tag-chip" data-tag="創造性">創造性</div><div class="tag-chip" data-tag="心理的安全性">心理的安全性</div></div>
             </div>
 
             <div class="div"></div>
-            <div style="font-size:11px;color:var(--stone);line-height:2.1;margin-bottom:11px" id="art-info">—</div>
+            <div style="font-size:11px;color:var(--stone);line-height:2.1;margin-bottom:11px" id="art-info">文字数: 41字<br>推定読了: 1分</div>
             <button class="btn btn-blk btn-full" onclick="goPage(4)">④ WordPress掲載へ →</button>
           </div>
         </div>
@@ -724,13 +731,36 @@ a { color: var(--gold); }
     </div>
 
     <!-- ═══ PAGE 4: PUBLISH ═══ -->
-    <div class="page" id="page4">
+    <div class="page on" id="page4">
       <div class="pub-pg">
         <div class="ptitle">掲載準備</div>
         <div class="pdesc">下のHTMLをコピーして、WordPressの投稿画面（コードエディター）に貼り付けてください。</div>
-        <div id="checklist" style="margin:14px 0"></div>
+        <div id="checklist" style="margin:14px 0"><div class="ci pend"><div class="ci-c">1</div><div><div class="ci-l">トピック選択</div><div class="ci-s">Step①でトピックを選んでください</div></div></div><div class="ci pend"><div class="ci-c">2</div><div><div class="ci-l">記事生成</div><div class="ci-s">Step②で記事を生成してください</div></div></div><div class="ci pend"><div class="ci-c">3</div><div><div class="ci-l">ビジュアル確認</div><div class="ci-s">Step③でビジュアルを設定してください</div></div></div></div>
         <label class="slbl" style="margin-top:14px">WordPress 投稿用 HTML</label>
-        <div class="pre-blk"><button class="cpy-btn" id="cpy-btn" onclick="copyWP()">コピー</button><div id="wp-html">（先に記事を生成してください）</div></div>
+        <div class="pre-blk"><button class="cpy-btn" id="cpy-btn" onclick="copyWP()">コピー</button><div id="wp-html">&lt;!-- FOR ME NY 2026年3月号 ニュースレター --&gt;
+&lt;div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #C4BFB6;font-family:'DM Sans',Helvetica,sans-serif"&gt;
+
+&lt;svg viewBox="0 0 540 148" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:540px"&gt;&lt;rect width="540" height="148" fill="#0F0F0F"/&gt;&lt;text x="28" y="32" font-size="8" fill="#FFFFFF" opacity=".45" font-family="sans-serif" font-weight="600" letter-spacing="3"&gt;2026年3月号 · FOR ME NY&lt;/text&gt;&lt;line x1="28" y1="40" x2="512" y2="40" stroke="#B89040" stroke-width="1"/&gt;&lt;text x="28" y="83" font-size="28" fill="#FFFFFF" font-family="Georgia,serif" font-weight="300"&gt;タイトル未設定&lt;/text&gt;&lt;text x="28" y="106" font-size="11" fill="#FFFFFF" opacity=".5" font-family="sans-serif" font-weight="300"&gt;サブタイトル&lt;/text&gt;&lt;line x1="28" y1="128" x2="512" y2="128" stroke="#FFFFFF" stroke-width=".4" opacity=".2"/&gt;&lt;/svg&gt;
+
+&lt;div style="padding:30px 34px"&gt;
+  &lt;div style="margin-bottom:16px"&gt;&lt;span style="display:inline-block;padding:2px 8px;border:1px solid #C4BFB6;font-size:9px;color:#8A8279;letter-spacing:.07em;text-transform:uppercase;margin:0 4px 4px 0"&gt;マインドフルネス&lt;/span&gt;&lt;span style="display:inline-block;padding:2px 8px;border:1px solid #C4BFB6;font-size:9px;color:#8A8279;letter-spacing:.07em;text-transform:uppercase;margin:0 4px 4px 0"&gt;インプロ&lt;/span&gt;&lt;span style="display:inline-block;padding:2px 8px;border:1px solid #C4BFB6;font-size:9px;color:#8A8279;letter-spacing:.07em;text-transform:uppercase;margin:0 4px 4px 0"&gt;表現芸術&lt;/span&gt;&lt;/div&gt;
+  &lt;div style="font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8A8279;margin-bottom:11px"&gt;今月のトピック&lt;/div&gt;
+  &lt;div style="font-size:13px;line-height:1.85;padding-left:15px;border-left:2px solid #0F0F0F;margin-bottom:20px;color:#3A3733"&gt;&lt;/div&gt;
+  
+  
+  &lt;div style="height:1px;background:#C4BFB6;margin:22px 0"&gt;&lt;/div&gt;
+  &lt;div style="padding:16px 18px;border-left:2px solid #B89040;background:#F7F5F1"&gt;
+    &lt;p style="font-family:Georgia,serif;font-size:16px;font-style:italic;font-weight:300;line-height:1.55;color:#0F0F0F;margin:0"&gt;&lt;/p&gt;
+  &lt;/div&gt;
+  
+&lt;/div&gt;
+
+&lt;div style="padding:13px 34px;border-top:1px solid #C4BFB6;display:flex;align-items:center;justify-content:space-between;background:#F7F5F1"&gt;
+  &lt;span style="font-family:Georgia,serif;font-size:13px;font-weight:300;letter-spacing:.12em;text-transform:uppercase"&gt;FOR ME &lt;span style="color:#8A8279"&gt;NY&lt;/span&gt;&lt;/span&gt;
+  &lt;span style="font-size:10px;color:#8A8279"&gt;&lt;a href="https://formenewyork.com" style="color:#8A8279;text-decoration:none"&gt;formenewyork.com&lt;/a&gt;&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;</div></div>
         <div class="div"></div>
         <ol style="font-size:11px;color:var(--stone);line-height:2.4;padding-left:18px;margin-bottom:20px">
           <li>WordPress 管理画面 → 投稿 → 新規追加</li>
@@ -748,10 +778,10 @@ a { color: var(--gold); }
             </div>
             <button class="btn btn-out btn-sm" onclick="openGhModal()">⚙ 設定</button>
           </div>
-          <button class="btn btn-blk btn-full" id="deploy-btn" onclick="deployToGitHub()">
+          <button class="btn btn-blk btn-full" id="deploy-btn" onclick="deployToGitHub()" disabled="">
             🚀 GitHubに保存してiPhoneに反映
           </button>
-          <div class="gh-status" id="deploy-status"></div>
+          <div class="gh-status run" id="deploy-status"><div class="spin"></div><span>📡 GitHubに送信中...</span></div>
         </div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -766,10 +796,10 @@ a { color: var(--gold); }
 
 <nav class="bnav">
   <div class="bnav-inner">
-    <button class="bn on" data-p="1" onclick="goPage(1)"><span class="bn-ico">○</span><span>選択</span><span class="bn-bar"></span></button>
+    <button class="bn" data-p="1" onclick="goPage(1)"><span class="bn-ico">○</span><span>選択</span><span class="bn-bar"></span></button>
     <button class="bn" data-p="2" onclick="goPage(2)"><span class="bn-ico">✦</span><span>生成</span><span class="bn-bar"></span></button>
     <button class="bn" data-p="3" onclick="goPage(3)"><span class="bn-ico">◈</span><span>デザイン</span><span class="bn-bar"></span></button>
-    <button class="bn" data-p="4" onclick="goPage(4)"><span class="bn-ico">→</span><span>掲載</span><span class="bn-bar"></span></button>
+    <button class="bn on" data-p="4" onclick="goPage(4)"><span class="bn-ico">→</span><span>掲載</span><span class="bn-bar"></span></button>
   </div>
 </nav>
 
@@ -2158,5 +2188,6 @@ window.addEventListener('load', () => {
 }, { once: false });
 
 </script>
-</body>
-</html>
+
+
+</body></html>

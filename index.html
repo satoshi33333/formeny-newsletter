@@ -923,11 +923,15 @@ window.addEventListener('load', () => {
   const s = localStorage.getItem('fny_k');
   if (s) { document.getElementById('api-key').value = s; checkKey(); }
   initThemeChips();
-  // 起動時はテーマ選択のみ表示（検索はユーザーが実行）
   renderPalettes();
   renderTplThumbs();
   initTagChips();
   syncPreview();
+  // GitHub設定済みならギアを緑に
+  if (localStorage.getItem('gh_token')) {
+    const gear = document.getElementById('hdr-gear');
+    if (gear) gear.classList.add('configured');
+  }
 });
 
 /* ── テーマチップス ── */
@@ -2186,12 +2190,6 @@ function showGhStatus(id, type, msg) {
 }
 
 // 起動時：設定済みならヘッダーボタンを緑に
-window.addEventListener('load', () => {
-  if (localStorage.getItem('gh_token')) {
-    const gear = document.getElementById('hdr-gear');
-    if (gear) gear.classList.add('configured');
-  }
-}, { once: false });
 
 </script>
 

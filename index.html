@@ -281,14 +281,74 @@ a { color: var(--gold); }
 .photo-card.on { outline: 2px solid var(--black); }
 .photo-img { width: 100%; display: block; object-fit: cover; max-height: 200px; background: var(--light); }
 .photo-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 5px 7px; color: var(--stone); display: block; }
+
+/* ── GitHub自動デプロイ設定モーダル ── */
+.gh-modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 500; align-items: center; justify-content: center; padding: 20px;
+}
+.gh-modal-overlay.show { display: flex; }
+.gh-modal {
+  background: var(--white); width: 100%; max-width: 460px;
+  border: 1px solid var(--mid); padding: 24px;
+  max-height: 90vh; overflow-y: auto;
+}
+.gh-modal-title { font-family: var(--serif); font-size: 19px; font-weight: 300; margin-bottom: 4px; }
+.gh-modal-desc { font-size: 11px; color: var(--stone); margin-bottom: 16px; line-height: 1.7; }
+.gh-field { margin-bottom: 12px; }
+.gh-field label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--stone); display: block; margin-bottom: 5px; }
+.gh-field input { width: 100%; padding: 8px 11px; border: 1px solid var(--mid); font-size: 13px; background: var(--off); color: var(--black); outline: none; }
+.gh-field input:focus { border-color: var(--black); }
+.gh-status { font-size: 11px; margin-top: 10px; padding: 9px 12px; display: none; line-height: 1.6; }
+.gh-status.ok  { background: #EEF3EB; border: 1px solid #A8C49A; color: #2D5028; display: block; }
+.gh-status.err { background: #FDF0EE; border: 1px solid #E0B8B0; color: #8B2A1A; display: block; }
+.gh-status.run { background: var(--light); border: 1px solid var(--mid); color: var(--ink); display: flex; align-items: center; gap: 8px; }
+/* ヘッダーの設定ボタン */
+.hdr-gear { background: none; border: 1px solid rgba(255,255,255,.25); cursor: pointer; color: rgba(255,255,255,.7); font-size: 15px; padding: 4px 9px; transition: all .15s; }
+.hdr-gear:hover { border-color: rgba(255,255,255,.6); color: var(--white); }
+.hdr-gear.configured { border-color: #A8C49A; color: #A8C49A; }
 </style>
 </head>
 <body>
 
 <header class="hdr">
   <div class="hdr-logo">FOR ME <em>NY</em></div>
-  <span class="hdr-badge" id="hdr-badge">2026年3月号</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="hdr-badge" id="hdr-badge">2026年3月号</span>
+    <button class="hdr-gear" id="hdr-gear" onclick="openGhModal()" title="GitHub自動デプロイ設定">⚙</button>
+  </div>
 </header>
+
+<!-- GitHub設定モーダル -->
+<div class="gh-modal-overlay" id="gh-modal-overlay" onclick="if(event.target===this)closeGhModal()">
+  <div class="gh-modal">
+    <div class="gh-modal-title">GitHub 自動デプロイ設定</div>
+    <div class="gh-modal-desc">
+      設定すると「🚀 GitHubに保存」ボタン1つでアプリが自動更新されます。<br>
+      <a href="https://github.com/settings/tokens/new?scopes=repo&description=formeny-newsletter" target="_blank" style="color:var(--gold)">← ここでGitHubトークンを発行（repoスコープを選択）</a>
+    </div>
+
+    <div class="gh-field">
+      <label>GitHubユーザー名</label>
+      <input type="text" id="gh-owner" placeholder="例: satoshi33333">
+    </div>
+    <div class="gh-field">
+      <label>リポジトリ名</label>
+      <input type="text" id="gh-repo" placeholder="例: formeny-newsletter">
+    </div>
+    <div class="gh-field">
+      <label>Personal Access Token（ghp_xxx...）</label>
+      <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-blk" onclick="saveGhConfig()">✓ 保存</button>
+      <button class="btn btn-out btn-sm" onclick="testGhConnection()">接続テスト</button>
+      <button class="btn btn-out btn-sm" onclick="closeGhModal()">閉じる</button>
+    </div>
+    <div class="gh-status" id="gh-config-status"></div>
+  </div>
+</div>
 
 <div class="api-bar" id="api-bar">
   <div class="api-inner">
@@ -679,6 +739,21 @@ a { color: var(--gold); }
           <li>上のHTMLをそのまま貼り付ける</li>
           <li>カテゴリ「お知らせ」→ 公開</li>
         </ol>
+        <!-- GitHub自動デプロイ -->
+        <div style="background:var(--off);border:1px solid var(--mid);padding:14px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div>
+              <div style="font-size:11px;font-weight:600">🚀 GitHubに自動デプロイ</div>
+              <div style="font-size:10px;color:var(--stone);margin-top:2px">ボタン1つでGitHub Pagesが自動更新されます</div>
+            </div>
+            <button class="btn btn-out btn-sm" onclick="openGhModal()">⚙ 設定</button>
+          </div>
+          <button class="btn btn-blk btn-full" id="deploy-btn" onclick="deployToGitHub()">
+            🚀 GitHubに保存してiPhoneに反映
+          </button>
+          <div class="gh-status" id="deploy-status"></div>
+        </div>
+
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <a href="https://formenewyork.com/wp-admin/post-new.php" target="_blank" class="btn btn-blk" style="text-decoration:none">WordPress を開く ↗</a>
           <button class="btn btn-out" onclick="goPage(1)">← 最初からやり直す</button>
@@ -827,6 +902,18 @@ window.addEventListener('load', () => {
 
 /* ── テーマチップス ── */
 const THEMES = ['マインドフルネス','インプロ','表現芸術','体験型学習','AI×教育','感情知性','心理的安全性','創造性','リーダーシップ'];
+// テーマの英語対応
+const THEME_EN = {
+  'マインドフルネス': 'mindfulness',
+  'インプロ': 'improvisational theater',
+  '表現芸術': 'expressive arts',
+  '体験型学習': 'experiential learning',
+  'AI×教育': 'AI and education',
+  '感情知性': 'emotional intelligence',
+  '心理的安全性': 'psychological safety',
+  '創造性': 'creativity',
+  'リーダーシップ': 'leadership',
+};
 function initThemeChips() {
   const wrap = document.getElementById('theme-chips');
   if (!wrap) return;
@@ -933,37 +1020,53 @@ ${excludeStr}
 
   try {
     // 言語をsystemロールで強制 + 英語のみの場合はプロンプト自体も英語
-    let systemMsg, userPrompt;
+    // ─────────────────────────────────────────────
+    // 言語設定に応じてプロンプトとモデルを決定
+    // gpt-4o-mini-search-preview はsystemロールを無視するため
+    // プロンプト冒頭に言語指示を強制埋め込み + 英語時は全文英語化
+    // ─────────────────────────────────────────────
+    let finalPrompt, chosenModel;
 
     if (langEn && !langJa) {
-      // 英語のみ：プロンプト全体を英語で記述して検索クエリも英語に誘導
-      const enThemes = themes.join(', ') || '';
+      // ── 英語のみ ──
+      // プロンプト全体を英語にすることで検索クエリも英語になる
+      chosenModel = 'gpt-4o-search-preview'; // miniより言語指示の遵守率が高い
+      const enThemes = themes.map(t => THEME_EN[t] || t).join(', ');
       const enKeyword = keyword || '';
       const enQuery = [enThemes, enKeyword].filter(Boolean).join(', ');
-      systemMsg = 'You are a research assistant. You MUST search for and return ONLY English-language articles, papers, and reports. Do NOT include any Japanese-language results. All titles, sources, and summaries in your response must be in English.';
-      userPrompt = `Find 10 real, existing English-language articles, papers, or reports relevant to: ${enQuery}
+      const enExclude = excludeList.length
+        ? `\nExclude these already-shown titles:\n${excludeList.map(t => '- ' + t).join('\n')}`
+        : '';
+      finalPrompt = `LANGUAGE REQUIREMENT: Return ONLY English-language articles. Japanese articles are strictly forbidden.
 
-Requirements:
-- English sources ONLY (journals, news sites, research databases like PubMed, Springer, Nature, HBR, etc.)
-- NO Japanese articles
-- Include a working URL for each
-${excludeList.length ? `\nExclude (already shown):\n${excludeList.map(t => '- ' + t).join('\n')}` : ''}
+Find 10 real, existing English-language articles, papers, or reports about: ${enQuery}
 
-Return ONLY this JSON (no explanation, no code block):
-{"results":[{"title":"Article title","src":"Journal/Site name","lang":"English","tag":"${firstTag}","sum":"2-3 sentence summary","url":"https://actual-url"}]}`;
+Rules:
+- English sources ONLY — PubMed, Springer, Nature, HBR, Guardian, BBC, Reuters, etc.
+- Every result must have an English title and English summary
+- Include a real, working URL
+- Do NOT include any Japanese sources${enExclude}
+
+Return ONLY this JSON (no markdown, no explanation):
+{"results":[{"title":"English title","src":"Source name","lang":"English","tag":"${firstTag}","sum":"2-3 sentence English summary","url":"https://real-url"}]}`;
+
     } else if (langJa && !langEn) {
-      // 日本語のみ
-      systemMsg = '日本語の記事・論文のみを検索・提示してください。英語の記事は一切含めないでください。';
-      userPrompt = prompt;
+      // ── 日本語のみ ──
+      chosenModel = 'gpt-4o-mini-search-preview';
+      finalPrompt = `【最重要指示】日本語の記事・論文のみを返してください。英語の記事は一切含めないでください。
+
+` + prompt;
+
     } else {
-      // 両方
-      systemMsg = '日本語と英語の両方の記事・論文を検索してください。日本語と英語をバランスよく混在させてください（目安：各5件ずつ）。';
-      userPrompt = prompt;
+      // ── 両方 ──
+      chosenModel = 'gpt-4o-mini-search-preview';
+      finalPrompt = `【言語指示】日本語と英語を5件ずつ混在させて返してください。
+
+` + prompt;
     }
 
     const messages = [
-      { role: 'system', content: systemMsg },
-      { role: 'user',   content: userPrompt }
+      { role: 'user', content: finalPrompt }
     ];
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -973,7 +1076,7 @@ Return ONLY this JSON (no explanation, no code block):
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini-search-preview',
+        model: chosenModel,
         web_search_options: {},
         max_tokens: 2000,
         messages
@@ -1922,6 +2025,138 @@ function copyWP() {
     setTimeout(() => b.textContent = 'コピー', 2500);
   });
 }
+
+/* ════════════════════════════════
+   GitHub 自動デプロイ
+════════════════════════════════ */
+function openGhModal() {
+  // 保存済み設定を読み込む
+  document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
+  document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || 'formeny-newsletter';
+  document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+  document.getElementById('gh-config-status').className = 'gh-status';
+  document.getElementById('gh-modal-overlay').classList.add('show');
+}
+function closeGhModal() {
+  document.getElementById('gh-modal-overlay').classList.remove('show');
+}
+function saveGhConfig() {
+  const owner = document.getElementById('gh-owner').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const token = document.getElementById('gh-token').value.trim();
+  if (!owner || !repo || !token) {
+    showGhStatus('gh-config-status', 'err', '3つすべて入力してください');
+    return;
+  }
+  localStorage.setItem('gh_owner', owner);
+  localStorage.setItem('gh_repo',  repo);
+  localStorage.setItem('gh_token', token);
+  // ヘッダーボタンを緑に
+  document.getElementById('hdr-gear').classList.add('configured');
+  showGhStatus('gh-config-status', 'ok', '✓ 設定を保存しました');
+  setTimeout(closeGhModal, 1500);
+}
+async function testGhConnection() {
+  const owner = document.getElementById('gh-owner').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const token = document.getElementById('gh-token').value.trim();
+  if (!owner || !repo || !token) { showGhStatus('gh-config-status','err','3つすべて入力してください'); return; }
+  showGhStatus('gh-config-status', 'run', '接続確認中...');
+  try {
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) throw new Error('ステータス ' + r.status);
+    const d = await r.json();
+    showGhStatus('gh-config-status', 'ok', `✓ 接続OK： ${d.full_name}`);
+  } catch(e) {
+    showGhStatus('gh-config-status', 'err', 'エラー: ' + e.message + '\nトークン・ユーザー名・リポジトリ名を確認してください');
+  }
+}
+
+async function deployToGitHub() {
+  const owner = localStorage.getItem('gh_owner');
+  const repo  = localStorage.getItem('gh_repo');
+  const token = localStorage.getItem('gh_token');
+  if (!owner || !repo || !token) {
+    alert('先にGitHubの設定を行ってください（⚙ ボタン）');
+    openGhModal();
+    return;
+  }
+  const btn = document.getElementById('deploy-btn');
+  btn.disabled = true;
+  showGhStatus('deploy-status', 'run', '📡 GitHubに送信中...');
+
+  try {
+    // 現在のindex.htmlのSHAを取得（更新に必要）
+    const getRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/index.html`,
+      { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    let sha = null;
+    if (getRes.ok) {
+      const d = await getRes.json();
+      sha = d.sha;
+    }
+
+    // 現在のページのHTMLを取得してBase64エンコード
+    const pageHTML = document.documentElement.outerHTML;
+    const encoded  = btoa(unescape(encodeURIComponent(pageHTML)));
+
+    // GitHub APIでファイルを更新
+    const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const body = {
+      message: `Newsletter update: ${now}`,
+      content: encoded,
+      ...(sha ? { sha } : {})
+    };
+    const putRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/index.html`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }
+    );
+
+    if (!putRes.ok) {
+      const e = await putRes.json().catch(() => ({}));
+      throw new Error(e.message || 'アップロード失敗 ' + putRes.status);
+    }
+
+    const pagesUrl = `https://${owner}.github.io/${repo}/`;
+    showGhStatus('deploy-status', 'ok',
+      `✓ GitHubに保存しました！\n${pagesUrl}\n（反映まで1〜3分かかります）`
+    );
+
+  } catch(e) {
+    showGhStatus('deploy-status', 'err', 'エラー: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+function showGhStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'gh-status ' + type;
+  if (type === 'run') {
+    el.innerHTML = `<div class="spin"></div><span>${msg}</span>`;
+  } else {
+    el.textContent = msg;
+  }
+}
+
+// 起動時：設定済みならヘッダーボタンを緑に
+window.addEventListener('load', () => {
+  if (localStorage.getItem('gh_token')) {
+    const gear = document.getElementById('hdr-gear');
+    if (gear) gear.classList.add('configured');
+  }
+}, { once: false });
+
 </script>
 </body>
 </html>

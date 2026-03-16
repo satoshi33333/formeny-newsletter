@@ -50,7 +50,7 @@ a { color: var(--gold); }
 .st.on .st-n { background: var(--black); }
 
 .pages { flex: 1; overflow: hidden; }
-.page { display: none; height: calc(100vh - 86px); height: calc(100dvh - 86px); overflow: hidden; -webkit-overflow-scrolling: touch; }
+.page { display: none; height: calc(100vh - 86px); height: calc(100dvh - 86px); overflow: hidden; }
 .page.on { display: flex; flex-direction: column; }
 
 /* ── Bottom nav ── */
@@ -63,11 +63,11 @@ a { color: var(--gold); }
 .bn.on .bn-bar { opacity: 1; }
 
 /* ── Two-col ── */
-.two-col { display: flex; flex: 1; overflow: hidden; }
-.cl { overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; height: 100%; }
-.cl-l { flex: 1; border-right: 1px solid var(--mid); background: var(--white); }
-.cl-r { flex: 1; background: var(--off); }
-.cl-side { width: 264px; flex-shrink: 0; border-left: 1px solid var(--mid); background: var(--white); overflow-y: auto; height: 100%; }
+.two-col { display: flex; flex: 1; min-height: 0; }
+.cl { overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; flex: 1; min-height: 0; }
+.cl-l { border-right: 1px solid var(--mid); background: var(--white); }
+.cl-r { background: var(--off); }
+.cl-side { width: 264px; flex-shrink: 0; border-left: 1px solid var(--mid); background: var(--white); overflow-y: auto; }
 
 /* ── Type ── */
 .ptitle { font-family: var(--serif); font-size: 21px; font-weight: 300; margin-bottom: 4px; line-height: 1.2; }
@@ -236,8 +236,8 @@ a { color: var(--gold); }
 @media(max-width: 767px) {
   .bnav { display: block; }
   .shell, .pages, .page { height: calc(100vh - 86px - 56px); height: calc(100dvh - 86px - 56px); }
-  .two-col { flex-direction: column; overflow-y: auto; }
-  .cl { width: 100% !important; height: auto; overflow-y: visible; }
+  .two-col { flex-direction: column; overflow-y: auto; min-height: 0; }
+  .cl { width: 100% !important; flex: none; height: auto; overflow-y: visible; }
   .cl-l { border-right: none; border-bottom: 1px solid var(--mid); }
   .cl-side { width: 100%; border-left: none; border-top: 1px solid var(--mid); }
   #page3 .two-col { flex-direction: column-reverse; }
@@ -344,7 +344,7 @@ a { color: var(--gold); }
       <button class="btn btn-out btn-sm" onclick="testGhConnection()">接続テスト</button>
       <button class="btn btn-out btn-sm" onclick="closeGhModal()">閉じる</button>
     </div>
-    <div class="gh-status" id="gh-config-status"></div>
+    <div class="gh-status ok" id="gh-config-status">✓ 設定を保存しました</div>
   </div>
 </div>
 
@@ -1103,27 +1103,31 @@ Return ONLY this JSON (no markdown, no explanation):
       { role: 'user', content: finalPrompt }
     ];
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey
-      },
-      body: JSON.stringify({
-        model: chosenModel,
-        web_search_options: {},
-        max_tokens: 2000,
-        messages
-      })
-    });
+    let r;
+    try {
+      r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: chosenModel,
+          web_search_options: {},
+          max_tokens: 2000,
+          messages
+        })
+      });
+    } catch(fetchErr) {
+      // fetch自体が失敗（Load failed含む）→ フォールバックへ
+      throw new Error('web_search_model_unavailable');
+    }
 
     if (!r.ok) {
       const e = await r.json().catch(() => ({}));
-      // モデルが使えない場合は通常モデルにフォールバック
-      if (r.status === 404 || r.status === 400) {
-        throw new Error('web_search_model_unavailable');
-      }
-      throw new Error(e.error?.message || 'APIエラー ' + r.status);
+      if (r.status === 401) throw new Error('APIキーが無効です。正しいキーを入力してください（sk-...）');
+      if (r.status === 429) throw new Error('API利用制限に達しました。しばらく待ってから再試行してください');
+      throw new Error('web_search_model_unavailable');
     }
 
     const data = await r.json();
@@ -1162,11 +1166,11 @@ Return ONLY this JSON (no markdown, no explanation):
 
   } catch(e) {
     if (e.message === 'web_search_model_unavailable') {
-      // フォールバック：通常のgpt-4oで知識ベース検索
+      // ウェブ検索モデル不可 or fetchエラー → 通常gpt-4oにフォールバック
       await searchMoreFallback(themes, keyword, langStr, excludeStr);
     } else {
       errDiv.style.display = 'block';
-      errDiv.innerHTML = `検索エラー: ${e.message}<br><span style="font-size:10px">※ gpt-4o-mini-search-previewが使えない場合、OpenAI APIキーのアカウントで有効化されているか確認してください。</span>`;
+      errDiv.innerHTML = `検索エラー: ${e.message}`;
     }
   }
 

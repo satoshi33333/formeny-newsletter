@@ -353,6 +353,30 @@ a { color: var(--gold); }
       <button class="btn btn-out btn-sm" onclick="closeGhModal()">閉じる</button>
     </div>
     <div class="gh-status" id="gh-config-status"></div>
+
+    <div style="height:1px;background:var(--mid);margin:20px 0"></div>
+    <div class="gh-modal-title" style="font-size:16px;margin-bottom:4px">WordPress 自動投稿設定</div>
+    <div class="gh-modal-desc">
+      設定すると「📝 WordPressに下書き保存」ボタン1つで記事が自動作成されます。<br>
+      <a href="https://formenewyork.com/wp-admin/profile.php" target="_blank" style="color:var(--gold)">← ここでアプリケーションパスワードを発行</a>
+    </div>
+    <div class="gh-field">
+      <label>WordPressのURL</label>
+      <input type="text" id="wp-site-url" placeholder="例: https://formenewyork.com">
+    </div>
+    <div class="gh-field">
+      <label>WordPressユーザー名</label>
+      <input type="text" id="wp-username" placeholder="例: YoshimuraFORMENY">
+    </div>
+    <div class="gh-field">
+      <label>アプリケーションパスワード</label>
+      <input type="password" id="wp-app-password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-blk" onclick="saveWpConfig()">✓ 保存</button>
+      <button class="btn btn-out btn-sm" onclick="testWpConnection()">接続テスト</button>
+    </div>
+    <div class="gh-status" id="wp-config-status"></div>
   </div>
 </div>
 
@@ -760,8 +784,23 @@ a { color: var(--gold); }
           <div class="gh-status" id="deploy-status"></div>
         </div>
 
+        <!-- WordPress自動投稿 -->
+        <div style="background:var(--off);border:1px solid var(--mid);padding:14px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div>
+              <div style="font-size:11px;font-weight:600">📝 WordPress自動投稿</div>
+              <div style="font-size:10px;color:var(--stone);margin-top:2px">ボタン1つでWordPressに下書きを自動作成</div>
+            </div>
+            <button class="btn btn-out btn-sm" onclick="openGhModal()">⚙ 設定</button>
+          </div>
+          <button class="btn btn-blk btn-full" id="wp-post-btn" onclick="postToWordPress()">
+            📝 WordPressに下書き保存
+          </button>
+          <div class="gh-status" id="wp-post-status"></div>
+        </div>
+
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <a href="https://formenewyork.com/wp-admin/post-new.php?classic-editor" target="_blank" class="btn btn-blk" style="text-decoration:none">WordPress を開く ↗</a>
+          <a href="https://formenewyork.com/wp-admin/post-new.php?classic-editor" target="_blank" class="btn btn-out" style="text-decoration:none">WordPress を手動で開く ↗</a>
           <button class="btn btn-out" onclick="goPage(1)">← 最初からやり直す</button>
         </div>
       </div>
@@ -2251,14 +2290,115 @@ function copyWP() {
 }
 
 /* ════════════════════════════════
+   WordPress 自動投稿
+════════════════════════════════ */
+function saveWpConfig() {
+  const siteUrl  = document.getElementById('wp-site-url').value.trim().replace(/\/+$/, '');
+  const username = document.getElementById('wp-username').value.trim();
+  const password = document.getElementById('wp-app-password').value.trim();
+  if (!siteUrl || !username || !password) {
+    showGhStatus('wp-config-status', 'err', '3つすべて入力してください');
+    return;
+  }
+  localStorage.setItem('wp_site_url', siteUrl);
+  localStorage.setItem('wp_username', username);
+  localStorage.setItem('wp_app_password', password);
+  showGhStatus('wp-config-status', 'ok', '✓ WordPress設定を保存しました');
+  setTimeout(closeGhModal, 1500);
+}
+
+async function testWpConnection() {
+  const siteUrl  = document.getElementById('wp-site-url').value.trim().replace(/\/+$/, '');
+  const username = document.getElementById('wp-username').value.trim();
+  const password = document.getElementById('wp-app-password').value.trim();
+  if (!siteUrl || !username || !password) {
+    showGhStatus('wp-config-status', 'err', '3つすべて入力してください');
+    return;
+  }
+  showGhStatus('wp-config-status', 'run', '接続確認中...');
+  try {
+    const r = await fetch(`${siteUrl}/wp-json/wp/v2/users/me`, {
+      headers: {
+        'Authorization': 'Basic ' + btoa(username + ':' + password)
+      }
+    });
+    if (!r.ok) throw new Error('ステータス ' + r.status);
+    const d = await r.json();
+    showGhStatus('wp-config-status', 'ok', `✓ 接続OK：${d.name}（${d.roles?.join(', ')}）`);
+  } catch(e) {
+    showGhStatus('wp-config-status', 'err', 'エラー: ' + e.message + '\nURL・ユーザー名・パスワードを確認してください');
+  }
+}
+
+async function postToWordPress() {
+  const siteUrl  = localStorage.getItem('wp_site_url');
+  const username = localStorage.getItem('wp_username');
+  const password = localStorage.getItem('wp_app_password');
+  if (!siteUrl || !username || !password) {
+    alert('先にWordPressの設定を行ってください（⚙ボタン → WordPress自動投稿設定）');
+    openGhModal();
+    return;
+  }
+
+  const title   = document.getElementById('f-title')?.value || 'タイトル未設定';
+  const wpHtml  = document.getElementById('wp-html')?.textContent || '';
+  if (!wpHtml || wpHtml === '（先に記事を生成してください）') {
+    alert('先に記事を生成してください（Step②）');
+    return;
+  }
+
+  const btn = document.getElementById('wp-post-btn');
+  btn.disabled = true;
+  showGhStatus('wp-post-status', 'run', '📡 WordPressに送信中...');
+
+  try {
+    const r = await fetch(`${siteUrl}/wp-json/wp/v2/posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(username + ':' + password)
+      },
+      body: JSON.stringify({
+        title:   title,
+        content: wpHtml,
+        status:  'draft',  // 下書きとして保存
+      })
+    });
+
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || '投稿失敗 ' + r.status);
+    }
+
+    const post = await r.json();
+    const editUrl = `${siteUrl}/wp-admin/post.php?post=${post.id}&action=edit`;
+    showGhStatus('wp-post-status', 'ok',
+      `✓ 下書きを作成しました！\n編集画面で確認 → ${editUrl}`
+    );
+    // 編集画面へのリンクをクリック可能にする
+    const statusEl = document.getElementById('wp-post-status');
+    statusEl.innerHTML = `✓ 下書きを作成しました！<br><a href="${editUrl}" target="_blank" style="color:#2D5028;font-weight:600">→ WordPressで確認・編集する ↗</a>`;
+
+  } catch(e) {
+    showGhStatus('wp-post-status', 'err', 'エラー: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+/* ════════════════════════════════
    GitHub 自動デプロイ
 ════════════════════════════════ */
 function openGhModal() {
-  // 保存済み設定を読み込む
+  // GitHub設定を読み込む
   document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
   document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || 'formeny-newsletter';
   document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
   document.getElementById('gh-config-status').className = 'gh-status';
+  // WordPress設定を読み込む
+  document.getElementById('wp-site-url').value     = localStorage.getItem('wp_site_url')    || 'https://formenewyork.com';
+  document.getElementById('wp-username').value     = localStorage.getItem('wp_username')    || '';
+  document.getElementById('wp-app-password').value = localStorage.getItem('wp_app_password')|| '';
+  document.getElementById('wp-config-status').className = 'gh-status';
   document.getElementById('gh-modal-overlay').classList.add('show');
 }
 function closeGhModal() {

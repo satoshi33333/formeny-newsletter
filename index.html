@@ -358,11 +358,12 @@ a { color: var(--gold); }
     <div class="gh-modal-title" style="font-size:16px;margin-bottom:4px">WordPress 自動投稿設定</div>
     <div class="gh-modal-desc">
       設定すると「📝 WordPressに下書き保存」ボタン1つで記事が自動作成されます。<br>
+      WordPressのURLはサイトのトップURL（例：https://formenewyork.com）を入力してください。<br>
       <a href="https://formenewyork.com/wp-admin/profile.php" target="_blank" style="color:var(--gold)">← ここでアプリケーションパスワードを発行</a>
     </div>
     <div class="gh-field">
       <label>WordPressのURL</label>
-      <input type="text" id="wp-site-url" placeholder="例: https://formenewyork.com">
+      <input type="text" id="wp-site-url" placeholder="例: https://formenewyork.com（wp-adminは不要）">
     </div>
     <div class="gh-field">
       <label>WordPressユーザー名</label>
@@ -1055,19 +1056,22 @@ async function searchMore(isAdditional = false) {
   const queryStr = queryParts.join('\n');
   const firstTag = themes[0] || keyword.split(/[\s、,]+/)[0] || '教育';
 
-  const prompt = `FOR ME NY（インプロ×マインドフルネス×表現芸術の体験型教育プログラム企業）のニュースレター参考資料として使える、ウェブ上に実在する記事・論文・レポートを10件探してください。
+  const prompt = `ウェブ上に実在する記事・論文・レポートを10件探してください。インプロ・マインドフルネス・表現芸術・体験型学習・教育・感情知性・心理的安全性・リーダーシップなどのテーマに関連するものを優先してください。
 
 ${queryStr}
 
 【言語指示】${langInstruction}
 ${excludeStr}
 
-【その他の条件】
-- 実際にアクセス可能なURLを含めること
-- J-STAGE・CiNii・PubMed・NHK・日経・HBR・Springer・Nature等の信頼できる媒体を優先
+【URLについての厳守事項】
+- 実際にウェブ検索でアクセスして存在を確認したURLのみを含めること
+- 推測・想像・補完でURLを作らないこと
+- 404やアクセス不可のURLは含めないこと
+- URLが不確かな場合はnullにすること
+- J-STAGE・CiNii・PubMed・NHK・日経・HBR・Springer・Nature・政府機関等の信頼性の高い媒体を優先
 
 以下のJSON形式のみで返してください（前置き・説明・コードブロック不要）:
-{"results":[{"title":"タイトル","src":"掲載誌・サイト名","lang":"日本語またはEnglish","tag":"${firstTag}","sum":"内容の要約2〜3文","url":"https://実際のURL"}]}`;
+{"results":[{"title":"タイトル","src":"掲載誌・サイト名","lang":"日本語またはEnglish","tag":"${firstTag}","sum":"内容の要約2〜3文","url":"確認済みのURL（不確かな場合はnull）"}]}`;
 
   try {
     // 言語をsystemロールで強制 + 英語のみの場合はプロンプト自体も英語
@@ -1258,8 +1262,9 @@ function renderTopics() {
     d.className = 'tc' + (selIds.includes(t.id) ? ' on' : '');
     d.id = 'tc' + t.id;
     const urlBadge = t.url
-      ? `<a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--gold);text-decoration:none;margin-left:25px;margin-top:3px;border-bottom:1px solid var(--gold)">元記事を確認 →</a>`
-      : '';
+      ? `<a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--gold);text-decoration:none;margin-left:25px;margin-top:3px;border-bottom:1px solid var(--gold)">元記事を確認 →</a>
+         <span style="font-size:9px;color:var(--stone);margin-left:6px">※ 開けない場合はGoogle Scholar等で検索</span>`
+      : `<span style="font-size:9px;color:var(--stone);margin-left:25px;margin-top:3px;display:inline-block">URL未取得 — <a href="https://scholar.google.com/scholar?q=${encodeURIComponent(t.title+' '+t.src)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--stone)">Google Scholarで検索 ↗</a></span>`;
     const num = String(i + 1).padStart(2, '0');
     d.innerHTML = `<div class="tc-chk">✓</div>
       <div class="tc-top"><span class="tc-num">${num}</span><span class="tc-title">${t.title}</span></div>
@@ -2349,19 +2354,52 @@ async function postToWordPress() {
 
   const btn = document.getElementById('wp-post-btn');
   btn.disabled = true;
-  showGhStatus('wp-post-status', 'run', '📡 WordPressに送信中...');
+  showGhStatus('wp-post-status', 'run', '📡 タグを確認中...');
+
+  const auth = 'Basic ' + btoa(username + ':' + password);
 
   try {
+    // ── タグをWordPressに登録・取得 ──
+    const tagNames = [...activeTags];
+    const tagIds = [];
+
+    for (const tagName of tagNames) {
+      // まず既存タグを検索
+      const searchRes = await fetch(
+        `${siteUrl}/wp-json/wp/v2/tags?search=${encodeURIComponent(tagName)}&per_page=5`,
+        { headers: { 'Authorization': auth } }
+      );
+      if (searchRes.ok) {
+        const existing = await searchRes.json();
+        const matched = existing.find(t => t.name === tagName);
+        if (matched) {
+          tagIds.push(matched.id);
+          continue;
+        }
+      }
+      // なければ新規作成
+      const createRes = await fetch(`${siteUrl}/wp-json/wp/v2/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': auth },
+        body: JSON.stringify({ name: tagName })
+      });
+      if (createRes.ok) {
+        const newTag = await createRes.json();
+        tagIds.push(newTag.id);
+      }
+    }
+
+    showGhStatus('wp-post-status', 'run', `📡 WordPressに送信中... （タグ${tagIds.length}件）`);
+
+    // ── 投稿を作成 ──
     const r = await fetch(`${siteUrl}/wp-json/wp/v2/posts`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + btoa(username + ':' + password)
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': auth },
       body: JSON.stringify({
         title:   title,
         content: wpHtml,
-        status:  'draft',  // 下書きとして保存
+        status:  'draft',
+        tags:    tagIds,
       })
     });
 
@@ -2372,12 +2410,10 @@ async function postToWordPress() {
 
     const post = await r.json();
     const editUrl = `${siteUrl}/wp-admin/post.php?post=${post.id}&action=edit`;
-    showGhStatus('wp-post-status', 'ok',
-      `✓ 下書きを作成しました！\n編集画面で確認 → ${editUrl}`
-    );
-    // 編集画面へのリンクをクリック可能にする
     const statusEl = document.getElementById('wp-post-status');
-    statusEl.innerHTML = `✓ 下書きを作成しました！<br><a href="${editUrl}" target="_blank" style="color:#2D5028;font-weight:600">→ WordPressで確認・編集する ↗</a>`;
+    statusEl.className = 'gh-status ok';
+    statusEl.innerHTML = `✓ 下書きを作成しました！タグ${tagIds.length}件を自動追加。<br>
+      <a href="${editUrl}" target="_blank" style="color:#2D5028;font-weight:600">→ WordPressで確認・編集する ↗</a>`;
 
   } catch(e) {
     showGhStatus('wp-post-status', 'err', 'エラー: ' + e.message);

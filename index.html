@@ -1883,7 +1883,6 @@ async function generatePhoto() {
         n: 1,
         size: '1792x1024',
         quality: 'standard',
-        response_format: 'url',
       })
     });
 
@@ -1974,7 +1973,6 @@ async function adjustPhoto() {
         n: 1,
         size: '1792x1024',
         quality: 'standard',
-        response_format: 'url',
       })
     });
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー'); }

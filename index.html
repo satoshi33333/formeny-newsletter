@@ -27,13 +27,13 @@ input, textarea, select, button { font-family: inherit; }
 a { color: var(--gold); }
 
 /* ── Header ── */
-.hdr { background: var(--white); padding: 0 22px; height: 50px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--mid); position: sticky; top: 0; z-index: 200; }
-.hdr-logo { font-family: var(--serif); font-size: 17px; font-weight: 300; letter-spacing: .14em; text-transform: uppercase; }
+.hdr { background: var(--white); padding: 0 22px; height: 52px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--light); position: sticky; top: 0; z-index: 200; box-shadow: 0 1px 8px rgba(0,0,0,.04); }
+.hdr-logo { font-family: var(--serif); font-size: 16px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 .hdr-logo em { font-style: normal; color: var(--stone); }
 .hdr-badge { font-size: 10px; color: var(--stone); border: 1px solid var(--mid); padding: 3px 10px; letter-spacing: .06em; }
 
 /* ── API Banner ── */
-.api-bar { background: var(--light); border-bottom: 1px solid var(--mid); padding: 8px 22px; font-size: 11px; color: var(--stone); }
+.api-bar { background: #FBF9F5; border-bottom: 1px solid var(--light); padding: 8px 22px; font-size: 11px; color: var(--stone); }
 .api-bar.ok { background: #EEF3EB; border-color: #A8C49A; color: #3A5C30; }
 .api-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .api-lbl { white-space: nowrap; font-weight: 600; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
@@ -43,7 +43,7 @@ a { color: var(--gold); }
 /* ── Shell ── */
 .shell { display: flex; height: calc(100vh - 86px); height: calc(100dvh - 86px); overflow: hidden; }
 .stabs { display: none; width: 176px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--mid); flex-direction: column; }
-.st { padding: 13px 18px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--stone); text-align: left; display: flex; align-items: center; gap: 10px; letter-spacing: .07em; text-transform: uppercase; border-left: 2px solid transparent; transition: all .15s; }
+.st { padding: 14px 18px; font-size: 11px; font-weight: 400; cursor: pointer; border: none; background: none; color: var(--stone); text-align: left; display: flex; align-items: center; gap: 10px; letter-spacing: .02em; border-left: 3px solid transparent; transition: all .15s; }
 .st:hover { color: var(--black); background: var(--off); }
 .st.on { color: var(--black); background: var(--off); border-left-color: var(--black); }
 .st.done { color: var(--sage); }
@@ -74,8 +74,8 @@ a { color: var(--gold); }
 .cl-side { border-left: 1px solid var(--mid); background: var(--white); overflow-y: auto; overflow-x: hidden; }
 
 /* ── Type ── */
-.ptitle { font-family: var(--serif); font-size: 21px; font-weight: 300; margin-bottom: 4px; line-height: 1.2; }
-.pdesc { font-size: 11px; color: var(--stone); margin-bottom: 16px; line-height: 1.7; }
+.ptitle { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 6px; line-height: 1.3; color: var(--ink); }
+.pdesc { font-size: 12px; color: var(--stone); margin-bottom: 18px; line-height: 1.75; }
 .slbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--stone); margin-bottom: 5px; display: block; }
 .div { height: 1px; background: var(--mid); margin: 13px 0; }
 .fg { margin-bottom: 11px; }
@@ -87,8 +87,8 @@ a { color: var(--gold); }
 .ta:focus { border-color: var(--black); }
 
 /* ── Buttons ── */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all .15s; white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; min-height: 44px; -webkit-tap-highlight-color: transparent; }
-.btn-blk { background: var(--black); color: var(--white); border-color: var(--black); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all .15s; white-space: nowrap; letter-spacing: .04em; border-radius: 6px; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+.btn-blk { background: var(--ink); color: var(--white); border-color: var(--ink); }
 .btn-blk:hover:not(:disabled) { background: #333; }
 .btn-blk:disabled { background: var(--mid); border-color: var(--mid); cursor: not-allowed; }
 .btn-out { background: transparent; color: var(--black); border-color: var(--mid); }
@@ -97,9 +97,9 @@ a { color: var(--gold); }
 .btn-full { width: 100%; }
 
 /* ── Topic cards ── */
-.tc { background: var(--white); border: 1px solid var(--mid); padding: 12px 13px; cursor: pointer; margin-bottom: 6px; transition: all .15s; position: relative; -webkit-tap-highlight-color: transparent; }
-.tc:hover { border-color: var(--black); }
-.tc.on { border-color: var(--black); background: var(--off); }
+.tc { background: var(--white); border: 1px solid var(--light); padding: 14px 15px; cursor: pointer; margin-bottom: 8px; border-radius: 8px; transition: all .15s; position: relative; -webkit-tap-highlight-color: transparent; }
+.tc:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.tc.on { border-color: var(--gold); background: #FBF6EE; }
 .tc-top { display: flex; gap: 9px; margin-bottom: 3px; }
 .tc-num { font-family: var(--serif); font-size: 16px; color: var(--stone); font-weight: 300; flex-shrink: 0; line-height: 1.1; }
 .tc-title { font-size: 12px; font-weight: 600; line-height: 1.4; }
@@ -219,8 +219,8 @@ a { color: var(--gold); }
 
 /* Tag chips */
 .tag-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.tag-chip { padding: 3px 9px; border: 1px solid var(--mid); font-size: 9px; color: var(--stone); cursor: pointer; letter-spacing: .06em; text-transform: uppercase; transition: all .13s; }
-.tag-chip.on { border-color: var(--black); color: var(--black); }
+.tag-chip { padding: 5px 12px; border: 1px solid var(--mid); font-size: 10px; color: var(--stone); cursor: pointer; letter-spacing: .04em; border-radius: 20px; transition: all .13s; background: var(--white); }
+.tag-chip.on { border-color: var(--gold); color: var(--gold); background: #FBF6EE; }
 
 /* ── Publish ── */
 .pub-pg { padding: 22px 20px; max-width: 620px; margin: 0 auto; }
@@ -832,18 +832,18 @@ let searchCount = 0;    // 何回目の検索か（「次の10件」用）
    サイトの写真・空間から抽出したトーン
 ════════════════════════════════ */
 const PALETTES = [
-  {id:'p0', name:'ブラック',      bg:'#0F0F0F', fg:'#FFFFFF', acc:'#B89040', thumb:'#0F0F0F'},
-  {id:'p1', name:'クリーム白',    bg:'#F7F5F1', fg:'#0F0F0F', acc:'#8A8279', thumb:'#F7F5F1', border:true},
-  {id:'p2', name:'ウォームグレー',bg:'#4A4540', fg:'#F7F5F1', acc:'#C8B890', thumb:'#4A4540'},
-  {id:'p3', name:'ゴールド',      bg:'#B89040', fg:'#FFFFFF', acc:'#0F0F0F', thumb:'#B89040'},
-  {id:'p4', name:'チャコール',    bg:'#2A2520', fg:'#EDE8E0', acc:'#B89040', thumb:'#2A2520'},
-  {id:'p5', name:'ライトベージュ',bg:'#EDE8E0', fg:'#2A2520', acc:'#6B7F5E', thumb:'#EDE8E0', border:true},
-  {id:'p6', name:'セージグリーン',bg:'#4E5F45', fg:'#F0EEE8', acc:'#C8B890', thumb:'#4E5F45'},
-  {id:'p7', name:'オフホワイト',  bg:'#FDFAF4', fg:'#3A3733', acc:'#B89040', thumb:'#FDFAF4', border:true},
-  {id:'p8', name:'スカイブルー',  bg:'#EAF4FB', fg:'#1A3A50', acc:'#3A7CA8', thumb:'#EAF4FB', border:true},
-  {id:'p9', name:'ミストブルー',  bg:'#D6E8F5', fg:'#1A3A50', acc:'#2A6090', thumb:'#D6E8F5', border:true},
-  {id:'p10',name:'ダスティブルー',bg:'#5E8FAA', fg:'#FFFFFF', acc:'#EAF4FB', thumb:'#5E8FAA'},
-  {id:'p11',name:'ディープブルー',bg:'#1E3D5C', fg:'#E8F2FA', acc:'#8FC4E0', thumb:'#1E3D5C'},
+  {id:'p0', name:'クリーム白',    bg:'#F7F5F1', fg:'#2A2520', acc:'#B89040', thumb:'#F7F5F1', border:true},
+  {id:'p1', name:'ソフトホワイト',bg:'#FDFAF4', fg:'#3A3733', acc:'#9B7B3A', thumb:'#FDFAF4', border:true},
+  {id:'p2', name:'ウォームベージュ',bg:'#EDE8E0', fg:'#2A2520', acc:'#6B7F5E', thumb:'#EDE8E0', border:true},
+  {id:'p3', name:'ゴールド',      bg:'#B89040', fg:'#FFFFFF', acc:'#2A2520', thumb:'#B89040'},
+  {id:'p4', name:'セージグリーン',bg:'#EEF2EA', fg:'#2A3A25', acc:'#4E6B42', thumb:'#EEF2EA', border:true},
+  {id:'p5', name:'ソフトグリーン',bg:'#4E5F45', fg:'#F0EEE8', acc:'#C8B890', thumb:'#4E5F45'},
+  {id:'p6', name:'スカイブルー',  bg:'#EAF4FB', fg:'#1A3A50', acc:'#3A7CA8', thumb:'#EAF4FB', border:true},
+  {id:'p7', name:'ミストブルー',  bg:'#D6E8F5', fg:'#1A3A50', acc:'#2A6090', thumb:'#D6E8F5', border:true},
+  {id:'p8', name:'ソフトラベンダー',bg:'#F0EEF8', fg:'#2A2550', acc:'#6B5FAA', thumb:'#F0EEF8', border:true},
+  {id:'p9', name:'ウォームピンク',bg:'#FAF0EE', fg:'#3A2520', acc:'#B87070', thumb:'#FAF0EE', border:true},
+  {id:'p10',name:'チャコール',    bg:'#4A4540', fg:'#F7F5F1', acc:'#C8B890', thumb:'#4A4540'},
+  {id:'p11',name:'ディープネイビー',bg:'#1E3D5C', fg:'#E8F2FA', acc:'#8FC4E0', thumb:'#1E3D5C'},
 ];
 
 /* ════════════════════════════════
@@ -951,7 +951,7 @@ window.addEventListener('load', () => {
 });
 
 /* ── テーマチップス ── */
-const THEMES = ['マインドフルネス','インプロ','インプロビゼーション','応用インプロ','即興演劇','表現芸術','体験型学習','AI','教育','感情知性','心理的安全性','リーダーシップ'];
+const THEMES = ['マインドフルネス','インプロ','インプロビゼーション','応用インプロ','即興演劇','表現芸術','体験型学習','AI','人工知能','教育','感情知性','心理的安全性','リーダーシップ','創造性','共創','右脳'];
 // テーマの英語対応
 const THEME_EN = {
   'マインドフルネス': 'mindfulness',
@@ -962,10 +962,14 @@ const THEME_EN = {
   '表現芸術': 'expressive arts',
   '体験型学習': 'experiential learning',
   'AI': 'artificial intelligence',
+  '人工知能': 'artificial intelligence',
   '教育': 'education',
   '感情知性': 'emotional intelligence',
   '心理的安全性': 'psychological safety',
   'リーダーシップ': 'leadership',
+  '創造性': 'creativity',
+  '共創': 'co-creation',
+  '右脳': 'right brain',
 };
 function initThemeChips() {
   const wrap = document.getElementById('theme-chips');
@@ -1402,7 +1406,7 @@ function setTpl(el, tpl) {
 
 /* ── Tag chips ── */
 function initTagChips() {
-  const tags = ['マインドフルネス','インプロ','インプロビゼーション','応用インプロ','即興演劇','表現芸術','体験型学習','AI','教育','感情知性','心理的安全性','リーダーシップ'];
+  const tags = ['マインドフルネス','インプロ','インプロビゼーション','応用インプロ','即興演劇','表現芸術','体験型学習','AI','人工知能','教育','感情知性','心理的安全性','リーダーシップ','創造性','共創','右脳'];
   const wrap = document.getElementById('tag-chips');
   tags.forEach(tag => {
     const d = document.createElement('div');

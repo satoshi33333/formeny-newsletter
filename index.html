@@ -1874,29 +1874,39 @@ async function generatePhoto() {
   lastPhotoPrompt = finalPrompt;
 
   try {
-    const r = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: finalPrompt,
-        n: 1,
-        size: '1792x1024',
-        quality: 'standard',
-      })
-    });
-
-    if (!r.ok) {
-      const e = await r.json().catch(() => ({}));
-      throw new Error(e.error?.message || 'DALL-E APIエラー ' + r.status);
+    // gpt-image-1 → dall-e-3 → dall-e-2 の順でフォールバック
+    let imageURL = null;
+    let usedModel = '';
+    const models = [
+      { model: 'gpt-image-1', size: '1024x1024' },
+      { model: 'dall-e-3',    size: '1024x1024' },
+      { model: 'dall-e-2',    size: '1024x1024' },
+    ];
+    for (const { model, size } of models) {
+      const r = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({ model, prompt: finalPrompt.substring(0, 1000), n: 1, size })
+      });
+      const data = await r.json();
+      if (r.ok) {
+        // gpt-image-1はb64_json、dall-e系はurl
+        if (data.data?.[0]?.url) {
+          imageURL = data.data[0].url;
+        } else if (data.data?.[0]?.b64_json) {
+          imageURL = 'data:image/png;base64,' + data.data[0].b64_json;
+        }
+        usedModel = model;
+        if (imageURL) break;
+      } else {
+        const msg = data.error?.message || '';
+        if (msg.includes('does not exist') || msg.includes('not found') || r.status === 404 || r.status === 400) continue;
+        throw new Error(msg || '画像生成APIエラー ' + r.status);
+      }
     }
-
-    const data = await r.json();
-    const imageURL = data.data?.[0]?.url;
-    if (!imageURL) throw new Error('画像URLを取得できませんでした');
-
+    if (!imageURL) throw new Error('画像を生成できませんでした。APIキーの画像生成権限を確認してください。');
     currentPhotoURL = imageURL;
-    renderPhotoGrid(imageURL);
+    renderPhotoGrid(imageURL, usedModel);
 
   } catch(e) {
     btn.style.pointerEvents = '';
@@ -1904,7 +1914,7 @@ async function generatePhoto() {
   }
 }
 
-function renderPhotoGrid(url) {
+function renderPhotoGrid(url, model) {
   const btn = document.getElementById('photo-gen-btn');
   const grid = document.getElementById('photo-grid');
   const cards = document.getElementById('photo-cards');
@@ -1913,11 +1923,14 @@ function renderPhotoGrid(url) {
   grid.style.display = 'block';
   cards.innerHTML = '';
 
+  const modelNote = model === 'dall-e-2' 
+    ? ' <span style="font-size:9px;color:#7A5C00;background:#FFF8EC;border:1px solid #E0C870;padding:1px 5px">DALL-E 2</span>' 
+    : '';
   const card = document.createElement('div');
   card.className = 'photo-card on';
   card.innerHTML = `
     <img class="photo-img" src="${url}" alt="生成された写真" loading="lazy">
-    <span class="photo-label">✓ 選択済み — クリックで選択/解除</span>`;
+    <span class="photo-label">✓ 選択済み — クリックで選択/解除${modelNote}</span>`;
   card.onclick = () => {
     const isOn = card.classList.contains('on');
     if (isOn) {
@@ -1964,23 +1977,29 @@ async function adjustPhoto() {
   lastPhotoPrompt = newPrompt;
 
   try {
-    const r = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: newPrompt.substring(0, 4000),
-        n: 1,
-        size: '1792x1024',
-        quality: 'standard',
-      })
-    });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー'); }
-    const data = await r.json();
-    const imageURL = data.data?.[0]?.url;
-    if (!imageURL) throw new Error('画像URLを取得できませんでした');
-    currentPhotoURL = imageURL;
-    renderPhotoGrid(imageURL);
+    let imageURL2 = null;
+    let usedModel2 = '';
+    for (const { model, size } of [{model:'gpt-image-1',size:'1024x1024'},{model:'dall-e-3',size:'1024x1024'},{model:'dall-e-2',size:'1024x1024'}]) {
+      const r = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({ model, prompt: newPrompt.substring(0, 1000), n: 1, size })
+      });
+      const data = await r.json();
+      if (r.ok) {
+        if (data.data?.[0]?.url) imageURL2 = data.data[0].url;
+        else if (data.data?.[0]?.b64_json) imageURL2 = 'data:image/png;base64,' + data.data[0].b64_json;
+        usedModel2 = model;
+        if (imageURL2) break;
+      } else {
+        const msg = data.error?.message || '';
+        if (msg.includes('does not exist') || msg.includes('not found') || r.status === 404 || r.status === 400) continue;
+        throw new Error(msg || 'APIエラー');
+      }
+    }
+    if (!imageURL2) throw new Error('画像を生成できませんでした');
+    currentPhotoURL = imageURL2;
+    renderPhotoGrid(imageURL2, usedModel2);
     st.className = 'gst show ok'; msg.textContent = '✓ 更新しました';
     setTimeout(() => { st.className = 'gst'; }, 2500);
   } catch(e) {

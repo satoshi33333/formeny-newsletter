@@ -201,7 +201,7 @@ a { color: var(--gold); }
 .vis-card { border: 1px solid var(--mid); cursor: pointer; transition: all .13s; overflow: hidden; }
 .vis-card:hover, .vis-card.on { border-color: var(--black); }
 .vis-card.on { outline: 2px solid var(--black); }
-.vis-thumb { height: 72px; width: 100%; display: block; background: var(--light); overflow: hidden; }
+.vis-thumb { height: 100px; width: 100%; display: block; background: var(--light); overflow: hidden; }
 .vis-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; color: var(--stone); display: block; }
 .vis-card.on .vis-label { color: var(--black); }
 
@@ -476,7 +476,7 @@ a { color: var(--gold); }
         <div class="cl cl-l">
           <div class="ptitle" style="font-size:18px">生成設定</div>
           <div class="div"></div>
-          <div class="fg"><label class="slbl">号数・月</label><input type="month" class="fi" id="issue-month" value="2026-03" oninput="updateBadge()"></div>
+          <div class="fg"><label class="slbl">号数・月</label><input type="month" class="fi" id="issue-month" oninput="updateBadge()"></div>
           <div class="fg">
             <label class="slbl">トーン</label>
             <select class="fi" id="tone" style="cursor:pointer">
@@ -938,6 +938,11 @@ const INITIAL_TOPICS = [
 window.addEventListener('load', () => {
   const s = localStorage.getItem('fny_k');
   if (s) { document.getElementById('api-key').value = s; checkKey(); }
+  // 現在の年月を自動設定
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthInput = document.getElementById('issue-month');
+  if (monthInput) { monthInput.value = currentMonth; updateBadge(); }
   initThemeChips();
   renderPalettes();
   renderTplThumbs();
@@ -1454,7 +1459,8 @@ function updateBadge() {
   document.getElementById('hdr-badge').textContent = y + '年' + parseInt(m) + '月号';
 }
 function getMonthLabel() {
-  const v = document.getElementById('issue-month').value || '2026-03';
+  const now = new Date(); const fallback = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const v = document.getElementById('issue-month').value || fallback;
   const [y, m] = v.split('-');
   return y + '年' + parseInt(m) + '月号';
 }
@@ -1719,8 +1725,8 @@ SVGの具体的な構成：
 - ステップ1のボックス：<rect x="20" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
 - ステップ2のボックス：<rect x="200" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
 - ステップ3のボックス：<rect x="380" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
-- 矢印1：<polygon points="155,100 175,90 175,110" fill="#B89040"/>
-- 矢印2：<polygon points="355,100 375,90 375,110" fill="#B89040"/>
+- 矢印1：<polygon points="155,90 175,100 155,110" fill="#B89040"/>
+- 矢印2：<polygon points="355,90 375,100 355,110" fill="#B89040"/>
 - 各ボックスに上部ラベル（font-size="10" fill="#8A8279"）と主テキスト（font-size="14" fill="#3A3733" font-weight="500"）
 
 各ステップのテキストは記事内容から考えて、日本語で5文字以内で入れてください。`
@@ -1823,7 +1829,7 @@ function renderVisualGrid() {
   generatedVisuals.forEach((v, i) => {
     const card = document.createElement('div');
     card.className = 'vis-card' + (currentVisualIdx === i ? ' on' : '');
-    card.innerHTML = `<div class="vis-thumb" style="overflow:hidden">${v.svg||''}</div><span class="vis-label">${v.label||'ビジュアル'+(i+1)}</span>`;
+    card.innerHTML = `<div class="vis-thumb" style="overflow:hidden"><svg viewBox="0 0 540 200" style="width:100%;height:100%;display:block">${v.svg?.replace(/<svg[^>]*>/i,'')?.replace(/<\/svg>/i,'') || v.svg}</svg></div><span class="vis-label">${v.label||'ビジュアル'+(i+1)}</span>`;
     card.onclick = () => {
       currentVisualIdx = i; currentVisualSVG = v.svg || '';
       renderVisualGrid();

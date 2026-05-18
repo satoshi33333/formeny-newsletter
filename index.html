@@ -1706,58 +1706,104 @@ async function generateVisuals() {
   btn.innerHTML = `<div class="spin"></div><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">ビジュアルを生成中...</span>`;
 
   const summary = (title + ' ' + lead + ' ' + (body||'').substring(0,300)).substring(0,400);
-  const prompt = `あなたはSVGインフォグラフィックの専門デザイナーです。以下の記事テーマに合った実用的で見やすいSVG図解を3種類作成してください。
 
-記事テーマ：「${summary}」
+  // 3種類の図解を定義
+  const visualDefs = [
+    {
+      label: 'プロセスフロー',
+      instruction: `記事のテーマ「${summary}」をもとに、左から右への3ステップのプロセスフロー図を作成してください。
 
-【厳守事項】
+SVGの具体的な構成：
+- 背景：<rect width="540" height="200" fill="#F7F5F1"/>
+- タイトル：<text x="270" y="22" text-anchor="middle" font-size="12" fill="#8A8279">プロセス</text>
+- ステップ1のボックス：<rect x="20" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
+- ステップ2のボックス：<rect x="200" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
+- ステップ3のボックス：<rect x="380" y="60" width="140" height="80" rx="8" fill="white" stroke="#B89040" stroke-width="1.5"/>
+- 矢印1：<polygon points="155,100 175,90 175,110" fill="#B89040"/>
+- 矢印2：<polygon points="355,100 375,90 375,110" fill="#B89040"/>
+- 各ボックスに上部ラベル（font-size="10" fill="#8A8279"）と主テキスト（font-size="14" fill="#3A3733" font-weight="500"）
+
+各ステップのテキストは記事内容から考えて、日本語で5文字以内で入れてください。`
+    },
+    {
+      label: '効果グラフ',
+      instruction: `記事のテーマ「${summary}」をもとに、横棒グラフの効果・比較図を作成してください。
+
+SVGの具体的な構成：
+- 背景：<rect width="540" height="200" fill="#FFFFFF"/>
+- タイトル：<text x="270" y="22" text-anchor="middle" font-size="12" fill="#8A8279">効果・比較</text>
+- 3〜4項目の横棒グラフを縦に並べる
+- 各行の構成：
+  ・左ラベル：<text x="15" y="Y" font-size="11" fill="#3A3733">項目名（6文字以内）</text>
+  ・背景バー：<rect x="130" y="Y-14" width="360" height="20" rx="3" fill="#F0EDE8"/>
+  ・データバー：<rect x="130" y="Y-14" width="数値px" height="20" rx="3" fill="#B89040" opacity="0.8"/>
+  ・数値：<text x="バー右端+8" y="Y" font-size="11" fill="#B89040" font-weight="500">数値%</text>
+- 各項目のY座標：60, 100, 140, 180
+- バー幅は項目ごとに変化させる（最大360px）
+
+項目名と数値は記事内容から具体的に考えてください。数値は記事に根拠があれば使用し、なければ概念的な大小を表す値にしてください。`
+    },
+    {
+      label: 'キーワードマップ',
+      instruction: `記事のテーマ「${summary}」をもとに、中心から広がるキーワードマップを作成してください。
+
+SVGの具体的な構成：
+- 背景：<rect width="540" height="200" fill="#FFFFFF"/>
+- 中央の円：<circle cx="270" cy="100" r="45" fill="#B89040" opacity="0.15" stroke="#B89040" stroke-width="1.5"/>
+- 中央テキスト：<text x="270" y="96" text-anchor="middle" font-size="13" fill="#3A3733" font-weight="500">メインテーマ</text>
+  （2行になる場合は y="92" と y="108" に分ける）
+- 周囲に4つのキーワードを配置（上・右・下・左）
+  ・上：cx=270, cy=28（楕円rx=55 ry=20）
+  ・右：cx=460, cy=100（楕円rx=55 ry=20）
+  ・下：cx=270, cy=172（楕円rx=55 ry=20）
+  ・左：cx=80, cy=100（楕円rx=55 ry=20）
+- 中央から各キーワードへの線：<line x1="270" y1="100" x2="X" y2="Y" stroke="#C4BFB6" stroke-width="1"/>
+- 各楕円：<ellipse cx="X" cy="Y" rx="55" ry="20" fill="#F7F5F1" stroke="#C4BFB6" stroke-width="1"/>
+- 各テキスト：<text x="X" y="Y+5" text-anchor="middle" font-size="11" fill="#3A3733">キーワード</text>
+
+中央テーマと4つのキーワードは記事内容から考えてください。各テキストは8文字以内。`
+    }
+  ];
+
+  btn.innerHTML = `<div class="spin"></div><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">ビジュアルを生成中... (1/3)</span>`;
+
+  generatedVisuals = [];
+
+  for (let i = 0; i < visualDefs.length; i++) {
+    const def = visualDefs[i];
+    btn.innerHTML = `<div class="spin"></div><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">ビジュアルを生成中... (${i+1}/3) ${def.label}</span>`;
+
+    const prompt = `あなたはSVGインフォグラフィックの専門デザイナーです。以下の指示に従って高品質なSVG図解を1つ作成してください。
+
+${def.instruction}
+
+【必須要件】
 - viewBox="0 0 540 200" 必須（変更禁止）
-- テキストのx座標：20〜510の範囲内
-- テキストのy座標：18〜188の範囲内
+- すべてのテキストはx座標15〜520、y座標15〜188の範囲内
 - font-family属性は書かない
-- テキストは日本語で各ラベル10文字以内
+- テキストが図形の外にはみ出さないよう確認する
+- 完全で有効なSVGコードを返す
 
-【デザインルール】
-- 背景：白(#FFFFFF)またはクリーム(#F7F5F1)
-- メインテキスト：#0F0F0F または #3A3733
-- サブテキスト：#8A8279
-- アクセント線・枠：#B89040（ゴールド）または #4A4540
-- ボックスは<rect>でrx="4"の角丸
-- 矢印は▶を使うか<polygon points="..."/>で描く
+SVGコードのみ返してください。説明・前置き・コードブロック記号は不要です。`;
 
-【3種類の図解内容】
-
-1. プロセスフロー図
-記事の「Before → 体験 → After」または「課題 → 解決策 → 効果」を
-左から右への3ステップ矢印フローで表現。
-各ステップは角丸ボックス（幅130px × 高さ60px）に短いラベル。
-
-2. 効果・比較グラフ
-横棒グラフで記事の主な効果を3〜4項目で表現。
-左にラベル（100px幅）、右に棒グラフ（最大長300px）。
-数値や%は記事内容から推測して具体的に記載。
-
-3. キーワードマップ
-中央に記事の核心テーマを円で配置（cx=270, cy=100, r=40）。
-周囲に3〜4つのキーワードを線でつないで配置（半径100px）。
-
-以下のJSONのみで返してください（コードブロック・前置き・説明文は一切不要）：
-{"visuals":[
-  {"label":"プロセスフロー","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">ここに完全なSVGコード</svg>"},
-  {"label":"効果グラフ","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">ここに完全なSVGコード</svg>"},
-  {"label":"キーワードマップ","svg":"<svg viewBox=\\"0 0 540 200\\" xmlns=\\"http://www.w3.org/2000/svg\\">ここに完全なSVGコード</svg>"}
-]}`;
-
-  try {
-    const raw = await callOpenAI(prompt, 3000);
-    const parsed = JSON.parse(raw);
-    generatedVisuals = parsed.visuals || [];
-    if (!generatedVisuals.length) throw new Error('ビジュアルを生成できませんでした');
-    renderVisualGrid();
-  } catch(e) {
-    btn.style.display = 'flex';
-    btn.innerHTML = `<span style="font-size:18px">✦</span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">もう一度生成する</span><span style="font-size:10px;color:#8B2A1A">エラー：${e.message}</span>`;
+    try {
+      const raw = await callOpenAI(prompt, 2000);
+      const match = raw.match(/<svg[\s\S]*?<\/svg>/i);
+      const svg = match ? match[0] : raw;
+      if (svg.includes('<svg')) {
+        generatedVisuals.push({ label: def.label, svg });
+      }
+    } catch(e) {
+      generatedVisuals.push({ label: def.label, svg: `<svg viewBox="0 0 540 200" xmlns="http://www.w3.org/2000/svg"><rect width="540" height="200" fill="#F7F5F1"/><text x="270" y="100" text-anchor="middle" font-size="12" fill="#8A8279">生成エラー: ${e.message.substring(0,30)}</text></svg>` });
+    }
   }
+
+  if (!generatedVisuals.length) {
+    btn.style.display = 'flex';
+    btn.innerHTML = `<span style="font-size:18px">✦</span><span style="font-size:11px">生成できませんでした。もう一度試してください。</span>`;
+    return;
+  }
+  renderVisualGrid();
 }
 
 function renderVisualGrid() {

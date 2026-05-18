@@ -478,7 +478,18 @@ a { color: var(--gold); }
           <div class="div"></div>
           <div class="fg"><label class="slbl">号数・月</label><input type="month" class="fi" id="issue-month" oninput="updateBadge()"></div>
           <div class="fg">
-            <label class="slbl">トーン</label>
+            <label class="slbl">目的</label>
+            <select class="fi" id="purpose" style="cursor:pointer">
+              <option value="informative">情報提供型 — 新情報・業界動向・ニュース共有</option>
+              <option value="educational">教育型 — 知識・スキルをわかりやすく伝える</option>
+              <option value="persuasive">説得型 — 読者の行動を促す（参加・申込・共有）</option>
+              <option value="narrative">ストーリー型 — 共感・感情的つながりを作る</option>
+              <option value="inspirational">インスピレーション型 — モチベーション・自己効力感を高める</option>
+              <option value="curated">キュレーション型 — 複数の情報をまとめて価値を提供</option>
+              <option value="thoughtprovoking">問いかけ型 — 読者に考えさせ対話・議論を促す</option>
+            </select>
+
+            <label class="slbl" style="margin-top:10px">文体</label>
             <select class="fi" id="tone" style="cursor:pointer">
               <option value="professional">プロフェッショナル（研究者・企業向け）</option>
               <option value="warm">温かみのある（教育者・コミュニティ向け）</option>
@@ -1484,8 +1495,25 @@ async function generate() {
   const st = document.getElementById('gst'), sp = document.getElementById('gst-sp'), msg = document.getElementById('gst-msg'), btn = document.getElementById('gen-btn');
   st.className = 'gst show run'; sp.style.display = 'block'; btn.disabled = true;
   const tops = selIds.length ? selIds.map(id => liveTopics.find(t => t.id === Number(id))).filter(Boolean) : liveTopics.slice(0, 2);
-  const tm = { professional: 'プロフェッショナル・研究者向け', warm: '温かみがある教育者向け', casual: 'カジュアルでSNS向け', bilingual: '日英バイリンガル' };
-  const tone = document.getElementById('tone').value, len = document.getElementById('wlen').value;
+  const tone = document.getElementById('tone').value;
+  const len = document.getElementById('wlen').value;
+  const minLen = Math.round(parseInt(len) * 0.7);
+  const purpose = document.getElementById('purpose')?.value || 'informative';
+  const purposeInstructions = {
+    informative:      '記事の目的：最新の研究・業界動向・ニュースを読者に共有すること。事実を中心に簡潔に伝え、読者が「知らなかった」と感じる情報を提供する。',
+    educational:      '記事の目的：読者が知識やスキルを学べるようにすること。「なぜ重要か」「どう活かせるか」を明確にし、具体例やステップで理解を助ける。',
+    persuasive:       '記事の目的：読者に具体的な行動（イベント参加・申込・共有など）を促すこと。研究の根拠を示しながら、行動することのメリットを伝える。',
+    narrative:        '記事の目的：共感・感情的つながりを作ること。研究知見を人間の体験・ストーリーと結びつけて伝え、読者が「自分のこと」として感じられるようにする。',
+    inspirational:    '記事の目的：読者のモチベーション・自己効力感を高めること。研究が示す可能性や希望を前面に出し、「自分にもできる」「変化は起こせる」という感覚を伝える。',
+    curated:          '記事の目的：複数の研究・情報をまとめて読者に価値を提供すること。各リサーチのポイントを簡潔にまとめ、「これだけ読めばわかる」という構成にする。',
+    thoughtprovoking: '記事の目的：読者に考えさせ、対話・議論を促すこと。問いかけや視点の転換を使い、読者が「どう思うか」を考えたくなるような構成にする。',
+  };
+  const toneInstructions = {
+    professional: '学術論文・専門誌のような客観的・分析的な文体。「〜が示された」「〜と報告されている」など研究的表現を使う。箇条書きや数値を積極的に活用。読者は企業の人事・経営者・研究者。',
+    warm: '読者に語りかけるような親しみやすい文体。「〜ではないでしょうか」「〜といえそうです」など柔らかい表現。現場での実践や人との関わりを大切にした表現。読者は教育者・ファシリテーター・コーチ。',
+    casual: '短くテンポよく読める文体。「〜なんです」「〜ですよね」など話し言葉に近い表現。印象的なフレーズや問いかけを積極的に使う。読者はSNSユーザー・一般の方。',
+    bilingual: '日本語の文章の中に重要なキーワードや印象的なフレーズを英語で挿入する。例：「心理的安全性（Psychological Safety）の研究では...」英語は括弧内に補足として入れるかフレーズを引用として使う。グローバルな視点を意識する。'
+  };
 
   // ── 元記事の本文を取得 ──
   msg.textContent = `元記事の本文を取得中... (1/${tops.length})`;
@@ -1557,8 +1585,12 @@ async function generate() {
 【リサーチ${tops.length}件 — すべて必ず使うこと】
 ${topicsBlock}
 
-【トーン】${tm[tone]}
-【文字数目安】${len}字（事実が少ない場合は字数を下回っても可）
+【記事の目的 — 全体の方向性】
+${purposeInstructions[purpose]}
+
+【文体・トーン — 必ず守ること】
+${toneInstructions[tone]}
+【文字数】${len}字を目安に書くこと。リサーチの内容が許す範囲で${len}字に近づけること。最低でも${minLen}字以上は書くこと。
 
 以下のJSON形式のみで返してください（コードブロックなし）：
 {"title":"タイトル（25字以内）","sub":"サブタイトル（40字以内）","lead":"リード文（100字以内。リサーチに基づく事実のみ）","body":"本文（各リサーチを段落ごとに展開。出典名を明記。推測なし。段落区切りは\\n\\nで）","closing":"読者への問いかけまたは示唆（45字以内。推測・セールス表現なし）"}`;
@@ -2316,6 +2348,7 @@ function buildRefsHTML(show) {
   return `<div style="margin-top:22px;padding-top:16px;border-top:1px solid #EDEBE7">
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#8A8279;margin-bottom:10px">参考文献</div>
     ${items}
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EDEBE7;font-size:10px;color:#8A8279;line-height:1.7;font-style:italic">本記事は掲載論文・記事の要約をもとに編集しています。詳細は各参考文献をご確認ください。</div>
   </div>`;
 }
 
@@ -2339,6 +2372,7 @@ function buildRefsWP(show) {
   return `<div style="margin-top:22px;padding-top:16px;border-top:1px solid #EDEBE7">
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#8A8279;margin-bottom:10px">参考文献</div>
     ${items}
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EDEBE7;font-size:10px;color:#8A8279;line-height:1.7;font-style:italic">本記事は掲載論文・記事の要約をもとに編集しています。詳細は各参考文献をご確認ください。</div>
   </div>`;
 }
 

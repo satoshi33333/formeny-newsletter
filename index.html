@@ -314,6 +314,8 @@ a { color: var(--gold); }
 .hdr-gear:hover { border-color: var(--black); color: var(--black); }
 .hdr-gear.configured { border-color: #A8C49A; color: #A8C49A; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 
@@ -392,6 +394,7 @@ a { color: var(--gold); }
 
 <div class="shell">
   <nav class="stabs">
+    <button class="st" data-p="0" onclick="goPage(0)"><div class="st-n" style="background:var(--gold);font-size:10px">★</div>実施報告から作成</button>
     <button class="st on" data-p="1" onclick="goPage(1)"><div class="st-n">1</div>トピック</button>
     <button class="st" data-p="2" onclick="goPage(2)"><div class="st-n">2</div>記事生成</button>
     <button class="st" data-p="3" onclick="goPage(3)"><div class="st-n">3</div>ビジュアル</button>
@@ -399,6 +402,65 @@ a { color: var(--gold); }
   </nav>
 
   <div class="pages">
+
+    <!-- ═══ PAGE 0: WORKSHOP REPORT ═══ -->
+    <div class="page" id="page0">
+      <div class="two-col">
+
+        <!-- 左：素材アップロード -->
+        <div class="cl cl-l">
+          <div class="ptitle">実施報告からブログを作成</div>
+          <div class="pdesc">台本・アンケート・スライド・チラシ等をアップロードすると、ワークショップの効果・参加者の声・スキル向上を伝えるブログ記事を作成します。</div>
+
+          <div class="slbl" style="margin-top:4px">素材ファイル</div>
+          <div id="wr-drop" style="border:1.5px dashed var(--mid);border-radius:8px;padding:24px 14px;text-align:center;cursor:pointer;background:var(--off);transition:all .15s" onclick="document.getElementById('wr-file-input').click()">
+            <div style="font-size:24px;margin-bottom:6px">📎</div>
+            <div style="font-size:11px;color:var(--stone)">クリックしてファイルを選択<br>（PDF・Word・画像、複数可）</div>
+          </div>
+          <input type="file" id="wr-file-input" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" multiple style="display:none" onchange="handleWrFiles(this.files)">
+
+          <div id="wr-file-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+
+          <div class="slbl" style="margin-top:16px">読み手のタイプ</div>
+          <select class="fi" id="wr-audience" style="cursor:pointer">
+            <option value="educator">教育者向け（学校・大学・教育機関）</option>
+            <option value="corporate">企業向け（人事・経営者・研修担当）</option>
+            <option value="general">一般・コミュニティ向け</option>
+          </select>
+
+          <div class="slbl" style="margin-top:14px">参考論文・引用元（任意）</div>
+          <div class="pdesc" style="margin-bottom:8px">「なぜこのアクティビティが必要か」を裏付ける論文を、AIが自動検索するか、URLを手動で追加できます。</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="btn btn-out btn-sm" onclick="wrAutoSearchPapers()" id="wr-auto-search-btn">🔍 AIが関連論文を自動検索</button>
+          </div>
+          <textarea class="ta" id="wr-manual-refs" placeholder="手動で論文URLを追加する場合はここに貼り付け（1行に1つ）" style="min-height:50px"></textarea>
+          <div id="wr-paper-results" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+
+          <button class="btn btn-blk btn-full" style="margin-top:18px" id="wr-gen-btn" onclick="generateWorkshopReport()">
+            ✦ ブログ記事を生成する
+          </button>
+          <div class="gh-status" id="wr-gen-status"></div>
+        </div>
+
+        <!-- 右：生成結果プレビュー -->
+        <div class="cl cl-r">
+          <div id="wr-result-empty" style="color:var(--stone);font-size:12px;text-align:center;margin-top:60px">
+            素材をアップロードして「ブログ記事を生成する」を押すと、<br>ここに記事が表示されます
+          </div>
+          <div id="wr-result" style="display:none">
+            <div class="asec">
+              <div class="asec-hd"><span class="asec-lbl">タイトル</span></div>
+              <div class="asec-body" id="wr-title" contenteditable="true"></div>
+            </div>
+            <div class="asec">
+              <div class="asec-hd"><span class="asec-lbl">本文</span></div>
+              <div class="asec-body" id="wr-body" contenteditable="true" style="white-space:pre-wrap"></div>
+            </div>
+            <button class="btn btn-out btn-full" style="margin-top:10px" onclick="sendWrToStep2()">→ この内容でStep②に進む（編集・デザインを続ける）</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ═══ PAGE 1: TOPICS ═══ -->
     <div class="page on" id="page1">
@@ -409,6 +471,10 @@ a { color: var(--gold); }
 
           <!-- テーマ選択パネル（常時表示） -->
           <div id="theme-panel">
+            <div style="background:#FBF6EE;border:1px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <div style="font-size:11px;color:var(--ink)">📎 ワークショップの台本・アンケート等から記事を作る場合はこちら</div>
+              <button class="btn btn-out btn-sm" onclick="goPage(0)" style="white-space:nowrap">実施報告から作成 →</button>
+            </div>
             <div class="ptitle">業界リサーチ</div>
             <div class="pdesc">テーマを選ぶか、キーワードを入力して検索すると実在する記事・論文が表示されます。</div>
 
@@ -1448,8 +1514,12 @@ function goPage(n) {
     const p = parseInt(t.dataset.p);
     t.classList.remove('on','done');
     if (p === n) t.classList.add('on');
-    else if (p < n) t.classList.add('done');
-    t.querySelector('.st-n').textContent = p < n ? '✓' : p;
+    else if (p > 0 && p < n) t.classList.add('done');
+    if (p === 0) {
+      t.querySelector('.st-n').textContent = '★';
+    } else {
+      t.querySelector('.st-n').textContent = (p > 0 && p < n) ? '✓' : p;
+    }
   });
   document.querySelectorAll('.bn').forEach(t => t.classList.toggle('on', parseInt(t.dataset.p) === n));
   if (n === 3) { syncPreview(); renderTplThumbs(); previewDone = true; }
@@ -1487,6 +1557,275 @@ async function callOpenAI(prompt, max = 1200) {
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー ' + r.status); }
   const d = await r.json();
   return (d.choices?.[0]?.message?.content ?? '').replace(/```json\s*/g, '').replace(/```svg\s*/g, '').replace(/```\s*/g, '').trim();
+}
+
+// 画像を含めて送れるVision版（Step0専用、既存callOpenAIとは独立）
+async function callOpenAIVision(textPrompt, imageDataUrls = [], max = 2000) {
+  if (!apiKey) throw new Error('APIキーが設定されていません');
+  const content = [{ type: 'text', text: textPrompt }];
+  imageDataUrls.forEach(url => {
+    content.push({ type: 'image_url', image_url: { url } });
+  });
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'gpt-4o', max_tokens: max, messages: [{ role: 'user', content }] })
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || 'APIエラー ' + r.status); }
+  const d = await r.json();
+  return (d.choices?.[0]?.message?.content ?? '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+}
+
+/* ════════════════════════════════
+   Step 0: ワークショップ実施報告から記事生成
+════════════════════════════════ */
+let wrFiles = [];        // { name, type, textContent?, imageDataUrl? }
+let wrPapers = [];        // 検索/手動で見つけた論文 { title, src, url, sum }
+
+async function handleWrFiles(fileList) {
+  const listEl = document.getElementById('wr-file-list');
+  for (const file of fileList) {
+    const entry = { name: file.name, type: file.type, status: 'reading' };
+    wrFiles.push(entry);
+    renderWrFileList();
+
+    try {
+      if (file.type === 'application/pdf') {
+        entry.textContent = await readPdfText(file);
+        entry.kind = 'pdf';
+      } else if (file.name.endsWith('.docx') || file.type.includes('wordprocessingml')) {
+        entry.textContent = await readDocxText(file);
+        entry.kind = 'docx';
+      } else if (file.type.startsWith('image/')) {
+        entry.imageDataUrl = await readFileAsDataURL(file);
+        entry.kind = 'image';
+      } else {
+        entry.textContent = await readPlainText(file);
+        entry.kind = 'text';
+      }
+      entry.status = 'done';
+    } catch (e) {
+      entry.status = 'error';
+      entry.error = e.message;
+    }
+    renderWrFileList();
+  }
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function readPlainText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+async function readPdfText(file) {
+  const buf = await file.arrayBuffer();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return text.substring(0, 8000);
+}
+
+async function readDocxText(file) {
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer: buf });
+  return (result.value || '').substring(0, 8000);
+}
+
+function renderWrFileList() {
+  const listEl = document.getElementById('wr-file-list');
+  const icons = { pdf: '📄', docx: '📝', image: '🖼️', text: '📃' };
+  listEl.innerHTML = wrFiles.map((f, i) => {
+    const icon = icons[f.kind] || '📎';
+    const statusText = f.status === 'reading' ? '読み込み中...'
+      : f.status === 'error' ? `エラー: ${f.error}`
+      : '✓ 読み込み完了';
+    const statusColor = f.status === 'error' ? '#8B2A1A' : f.status === 'done' ? '#2D5028' : 'var(--stone)';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--white);border:1px solid var(--light);border-radius:6px;font-size:11px">
+      <span>${icon}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span style="color:${statusColor};font-size:10px;flex-shrink:0">${statusText}</span>
+      <button onclick="removeWrFile(${i})" style="background:none;border:none;color:var(--stone);cursor:pointer;font-size:13px;padding:0 2px">×</button>
+    </div>`;
+  }).join('');
+}
+
+function removeWrFile(idx) {
+  wrFiles.splice(idx, 1);
+  renderWrFileList();
+}
+
+// AIで関連論文を自動検索（既存のStep①検索ロジックと同様の仕組みを使用）
+async function wrAutoSearchPapers() {
+  const btn = document.getElementById('wr-auto-search-btn');
+  const resultsEl = document.getElementById('wr-paper-results');
+  if (!apiKey) { alert('先にOpenAI APIキーを入力してください'); return; }
+
+  // アップロード済みファイルからテーマを推測するため、まずテキストを集約
+  const combinedText = wrFiles.filter(f => f.textContent).map(f => f.textContent).join('\n').substring(0, 1500);
+  if (!combinedText && wrFiles.every(f => !f.textContent)) {
+    alert('テキストを含むファイル（PDF・Word）をアップロードしてから検索してください。画像のみの場合は手動でテーマを検索欄に入力することをおすすめします。');
+  }
+
+  btn.disabled = true;
+  btn.textContent = '🔍 検索中...';
+
+  const prompt = `以下のワークショップ資料の内容から、関連する学術論文・記事を5件探してください。
+「なぜこのようなアクティビティが必要とされているか」を裏付けるような、社会的背景・効果研究を優先してください。
+
+【資料の内容】
+${combinedText || '（資料にテキストが見つからないため、インプロ・マインドフルネス・表現教育・心理的安全性・体験型学習に関する一般的な効果研究を探してください）'}
+
+実際にウェブ検索でアクセスして存在を確認したURLのみを含めてください。推測でURLを作らないでください。
+
+以下のJSON形式のみで返してください（コードブロックなし）：
+{"results":[{"title":"タイトル","src":"媒体名","sum":"内容の要約1〜2文","url":"確認済みのURL（不確かな場合はnull）"}]}`;
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-search-preview',
+        web_search_options: {},
+        max_tokens: 1800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!r.ok) throw new Error('検索エラー ' + r.status);
+    const d = await r.json();
+    const raw = (d.choices?.[0]?.message?.content || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed = JSON.parse(raw);
+    const results = parsed.results || [];
+    results.forEach(p => wrPapers.push(p));
+    renderWrPapers();
+  } catch (e) {
+    resultsEl.innerHTML = `<div style="font-size:11px;color:#8B2A1A">検索エラー: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '🔍 AIが関連論文を自動検索';
+}
+
+function renderWrPapers() {
+  const resultsEl = document.getElementById('wr-paper-results');
+  resultsEl.innerHTML = wrPapers.map((p, i) => `
+    <div style="padding:8px 10px;background:var(--white);border:1px solid var(--light);border-radius:6px;font-size:10.5px">
+      <div style="font-weight:600;color:var(--ink);margin-bottom:2px">${p.title}</div>
+      <div style="color:var(--stone);font-size:9.5px;margin-bottom:3px">${p.src || ''}</div>
+      <div style="color:var(--stone);line-height:1.5">${p.sum || ''}</div>
+      ${p.url ? `<a href="${p.url}" target="_blank" style="color:var(--gold);font-size:9.5px">元記事を確認 →</a>` : ''}
+    </div>
+  `).join('');
+}
+
+// メイン：実施報告からブログ記事を生成
+async function generateWorkshopReport() {
+  if (!apiKey) { alert('OpenAI APIキーを入力してください'); return; }
+  if (wrFiles.length === 0) { alert('まず素材ファイルをアップロードしてください'); return; }
+
+  const btn = document.getElementById('wr-gen-btn');
+  const statusEl = document.getElementById('wr-gen-status');
+  btn.disabled = true;
+  showGhStatus('wr-gen-status', 'run', '📡 ファイルを解析中...');
+
+  const audience = document.getElementById('wr-audience').value;
+  const audienceLabel = { educator: '教育者（学校・大学・教育機関）', corporate: '企業（人事・経営者・研修担当）', general: '一般・コミュニティ' }[audience];
+
+  // 手動論文URLを取り込む
+  const manualRefs = document.getElementById('wr-manual-refs').value.trim();
+  if (manualRefs) {
+    manualRefs.split('\n').filter(u => u.trim()).forEach(url => {
+      wrPapers.push({ title: '（手動追加）', src: '', sum: '', url: url.trim() });
+    });
+  }
+
+  const textContents = wrFiles.filter(f => f.textContent).map(f => `【${f.name}】\n${f.textContent}`).join('\n\n');
+  const imageDataUrls = wrFiles.filter(f => f.imageDataUrl).map(f => f.imageDataUrl);
+  const papersBlock = wrPapers.map((p, i) => `【参考文献${i+1}】${p.title}（${p.src || '出典不明'}）：${p.sum || ''}`).join('\n');
+
+  showGhStatus('wr-gen-status', 'run', '✦ 記事を生成中...');
+
+  const prompt = `あなたはFOR ME NY（インプロ×マインドフルネス×表現芸術の体験型教育プログラム）のワークショップ報告ブログを書くライターです。
+
+以下のワークショップ素材（台本・アンケート・スライド・チラシ等）の内容をもとに、読み手に「このワークショップでどんな効果があったか」が伝わるブログ記事を書いてください。
+
+【読み手】${audienceLabel}
+
+【記事に必ず含める要素】
+1. どんなワークショップで、どんな目的・テーマだったか
+2. どのようなアクティビティを行ったか（素材の内容に基づいて具体的に）
+3. 参加者にどのような効果・変化があったか（アンケート等の記述があれば引用）
+4. 参加者の声（アンケートに記述があれば、その内容を反映する。なければ創作しない）
+5. どのようなスキルが伸びたか
+6. なぜこのようなアクティビティが今必要とされているか（参考文献があれば、社会的背景として引用する）
+7. 読み手が「自分たちも取り入れなければ」と感じられるような問いかけや視点を含める
+
+【事実確認ルール】
+- 素材に書かれている内容を中心に書く
+- 数値・参加者の声は素材にあるものを使う。素材にない場合は創作しない
+- 参考文献がある場合は、出典名を明記して引用する（推測で論文を作らない）
+
+【素材の内容（テキスト）】
+${textContents || '（テキスト素材なし。添付画像を参照してください）'}
+
+【参考文献】
+${papersBlock || '（参考文献なし）'}
+
+【読み手別の調整】
+${audience === 'educator' ? '教育的な意義・カリキュラムへの応用可能性を強調する' : ''}
+${audience === 'corporate' ? '組織への投資対効果・チームビルディングへの応用可能性を強調する' : ''}
+${audience === 'general' ? '読みやすく親しみやすい文体にする' : ''}
+
+以下のJSON形式のみで返してください（コードブロックなし）：
+{"title":"タイトル（30字以内）","body":"本文（1200〜1800字程度。見出しを含めても良い。段落区切りは\\n\\nで）"}`;
+
+  try {
+    let raw;
+    if (imageDataUrls.length > 0) {
+      raw = await callOpenAIVision(prompt, imageDataUrls, 3000);
+    } else {
+      raw = await callOpenAI(prompt, 3000);
+    }
+    const parsed = JSON.parse(raw);
+
+    document.getElementById('wr-title').textContent = parsed.title || '';
+    document.getElementById('wr-body').textContent = (parsed.body || '').replace(/\\n/g, '\n');
+    document.getElementById('wr-result-empty').style.display = 'none';
+    document.getElementById('wr-result').style.display = 'block';
+
+    showGhStatus('wr-gen-status', 'ok', '✓ 記事を生成しました');
+  } catch (e) {
+    showGhStatus('wr-gen-status', 'err', 'エラー: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+// Step0の結果をStep2に送って、既存の編集・デザインフローに乗せる
+function sendWrToStep2() {
+  const title = document.getElementById('wr-title').textContent;
+  const body = document.getElementById('wr-body').textContent;
+  document.getElementById('f-title').value = title;
+  document.getElementById('f-body').value = body;
+  // サブタイトル・リード文・締めは空でよい（ユーザーが必要なら追記）
+  goPage(2);
+  autoSelectTags(title + ' ' + body);
 }
 
 /* ── Generate article ── */

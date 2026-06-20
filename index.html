@@ -429,7 +429,7 @@ a { color: var(--gold); }
           </select>
 
           <div class="slbl" style="margin-top:14px">参考論文・引用元（任意）</div>
-          <div class="pdesc" style="margin-bottom:8px">「なぜこのアクティビティが必要か」を裏付ける論文を、AIが自動検索するか、URLを手動で追加できます。</div>
+          <div class="pdesc" style="margin-bottom:8px">アップロードした資料、または生成済みのブログ記事の内容をもとに、関連する学術論文・記事をAIが自動検索します（記事を生成済みの場合はその内容を優先）。URLを手動で追加することもできます。</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
             <button class="btn btn-out btn-sm" onclick="wrAutoSearchPapers()" id="wr-auto-search-btn">🔍 AIが関連論文を自動検索</button>
           </div>
@@ -1681,8 +1681,8 @@ async function wrAutoSearchPapers() {
   const btn = document.getElementById('wr-auto-search-btn');
   if (!apiKey) { alert('先にOpenAI APIキーを入力してください'); return; }
 
-  const combinedText = wrFiles.filter(f => f.textContent).map(f => f.textContent).join('\n').substring(0, 1500);
-  if (!combinedText && wrFiles.every(f => !f.textContent)) {
+  const combinedText = wrGetSearchSourceText();
+  if (!combinedText) {
     alert('テキストを含むファイル（PDF・Word）をアップロードしてから検索してください。画像のみの場合は手動でテーマを検索欄に入力することをおすすめします。');
   }
 
@@ -1697,11 +1697,28 @@ async function wrAutoSearchMore() {
   const btn = document.getElementById('wr-more-papers-btn');
   if (!apiKey) { alert('先にOpenAI APIキーを入力してください'); return; }
 
-  const combinedText = wrFiles.filter(f => f.textContent).map(f => f.textContent).join('\n').substring(0, 1500);
+  const combinedText = wrGetSearchSourceText();
   const excludeTitles = wrPapers.map(p => p.title);
 
   if (btn) { btn.disabled = true; btn.textContent = '🔍 探しています...'; }
   await wrSearchPapersInternal(combinedText, excludeTitles);
+}
+
+// 検索に使うテキストを取得：記事を既に生成済みならその本文を優先、
+// なければ各ファイルから均等に抜粋して資料全体をカバーする
+function wrGetSearchSourceText() {
+  const generatedBody = document.getElementById('wr-body')?.textContent?.trim();
+  if (generatedBody) {
+    const generatedTitle = document.getElementById('wr-title')?.textContent?.trim() || '';
+    return (generatedTitle + '\n' + generatedBody).substring(0, 2500);
+  }
+
+  const textFiles = wrFiles.filter(f => f.textContent);
+  if (textFiles.length === 0) return '';
+
+  // 各ファイルに均等な文字数を割り当てて抜粋（1ファイルに偏らないように）
+  const perFileLimit = Math.floor(2200 / textFiles.length);
+  return textFiles.map(f => f.textContent.substring(0, perFileLimit)).join('\n\n').substring(0, 2500);
 }
 
 async function wrSearchPapersInternal(combinedText, excludeTitles) {
@@ -1711,10 +1728,10 @@ async function wrSearchPapersInternal(combinedText, excludeTitles) {
     ? `\n\n【除外条件】以下のタイトルは既に提示済みのため、別の論文・記事を探してください：\n${excludeTitles.map(t => '- ' + t).join('\n')}`
     : '';
 
-  const prompt = `以下のワークショップ資料の内容から、関連する学術論文・記事を5件探してください。
-「なぜこのようなアクティビティが必要とされているか」を裏付けるような、社会的背景・効果研究を優先してください。
+  const prompt = `以下の内容（ワークショップ資料、または既に生成されたブログ記事）から、関連する学術論文・記事を5件探してください。
+記事全体のテーマ・効果・アクティビティの内容を裏付けるような、社会的背景・効果研究を優先してください。
 
-【資料の内容】
+【内容】
 ${combinedText || '（資料にテキストが見つからないため、インプロ・マインドフルネス・表現教育・心理的安全性・体験型学習に関する一般的な効果研究を探してください）'}
 ${excludeBlock}
 
@@ -1769,10 +1786,27 @@ ${excludeBlock}
     }
 
     const results = parsed.results || [];
-    // 新規取得分はデフォルトで選択状態にする
-    results.forEach(p => { p.selected = true; wrPapers.push(p); });
+    // クライアント側で重複チェック（タイトルの正規化比較）
+    const normalize = (s) => (s || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+    const existingNormalized = wrPapers.map(p => normalize(p.title));
+    const newUnique = results.filter(p => {
+      const n = normalize(p.title);
+      if (!n) return true;
+      const isDupe = existingNormalized.some(existing => existing === n || (existing.length > 10 && n.length > 10 && (existing.includes(n) || n.includes(existing))));
+      if (!isDupe) existingNormalized.push(n);
+      return !isDupe;
+    });
+
+    newUnique.forEach(p => { p.selected = true; wrPapers.push(p); });
     renderWrPapers();
+
+    const dupeCount = results.length - newUnique.length;
     const moreBtn = document.getElementById('wr-more-papers-btn');
+    if (newUnique.length === 0) {
+      document.getElementById('wr-paper-results').insertAdjacentHTML('afterbegin', `<div style="font-size:10.5px;color:#7A5C00;background:#FFF8EC;border:1px solid #E0C870;padding:7px 10px;border-radius:6px;margin-bottom:6px">新しい候補が見つかりませんでした（${dupeCount}件は既存と重複のため除外）。資料の内容を増やすか、しばらくしてからもう一度お試しください。</div>`);
+    } else if (dupeCount > 0) {
+      document.getElementById('wr-paper-results').insertAdjacentHTML('afterbegin', `<div style="font-size:10.5px;color:var(--stone);margin-bottom:6px">${newUnique.length}件の新しい候補を追加しました（${dupeCount}件は重複のため除外）</div>`);
+    }
     if (moreBtn) { moreBtn.disabled = false; moreBtn.textContent = '＋ 他の候補を探す'; }
   } catch (e) {
     resultsEl.innerHTML = `<div style="font-size:11px;color:#8B2A1A">検索エラー: ${e.message}</div>` + resultsEl.innerHTML;

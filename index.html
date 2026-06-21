@@ -453,8 +453,20 @@ a { color: var(--gold); }
               <div class="asec-body" id="wr-title" contenteditable="true"></div>
             </div>
             <div class="asec">
+              <div class="asec-hd"><span class="asec-lbl">サブタイトル</span></div>
+              <div class="asec-body" id="wr-sub" contenteditable="true"></div>
+            </div>
+            <div class="asec">
+              <div class="asec-hd"><span class="asec-lbl">リード文</span></div>
+              <div class="asec-body" id="wr-lead" contenteditable="true" style="white-space:pre-wrap"></div>
+            </div>
+            <div class="asec">
               <div class="asec-hd"><span class="asec-lbl">本文</span></div>
               <div class="asec-body" id="wr-body" contenteditable="true" style="white-space:pre-wrap"></div>
+            </div>
+            <div class="asec">
+              <div class="asec-hd"><span class="asec-lbl">締め</span></div>
+              <div class="asec-body" id="wr-closing" contenteditable="true"></div>
             </div>
             <div class="asec" id="wr-refs-section" style="display:none">
               <div class="asec-hd"><span class="asec-lbl">参考文献</span></div>
@@ -1916,8 +1928,8 @@ ${audience === 'educator' ? '教育的な意義・カリキュラムへの応用
 ${audience === 'corporate' ? '組織への投資対効果・チームビルディングへの応用可能性を強調する' : ''}
 ${audience === 'general' ? '読みやすく親しみやすい文体にする' : ''}
 
-以下のJSON形式のみで返してください（コードブロックなし）：
-{"title":"タイトル（30字以内）","body":"本文（1200〜1800字程度。見出しを含めても良い。参考文献がある場合は本文中に[1][2]等の番号で引用すること。段落区切りは\\n\\nで）"}`;
+以下のJSON形式のみで返してください（コードブロックなし、すべてのキーに内容を入れること）：
+{"title":"タイトル（25字以内）","sub":"サブタイトル（40字以内）。タイトルを補足し記事の切り口を伝える一文","lead":"リード文（100字以内）。記事冒頭に置く要約文で読者の関心を引く","body":"本文（1200〜1800字程度。見出しを含めても良い。参考文献がある場合は本文中に[1][2]等の番号で引用すること。段落区切りは\\n\\nで）","closing":"締めの一文（45字以内）"}`;
 
   try {
     let raw;
@@ -1930,7 +1942,10 @@ ${audience === 'general' ? '読みやすく親しみやすい文体にする' : 
 
     const bodyText = (parsed.body || '').replace(/\\n/g, '\n');
     document.getElementById('wr-title').textContent = parsed.title || '';
+    document.getElementById('wr-sub').textContent = parsed.sub || '';
+    document.getElementById('wr-lead').textContent = (parsed.lead || '').replace(/\\n/g, '\n');
     document.getElementById('wr-body').textContent = bodyText;
+    document.getElementById('wr-closing').textContent = parsed.closing || '';
     document.getElementById('wr-result-empty').style.display = 'none';
     document.getElementById('wr-result').style.display = 'block';
 
@@ -1952,6 +1967,15 @@ ${audience === 'general' ? '読みやすく親しみやすい文体にする' : 
     }
 
     showGhStatus('wr-gen-status', 'ok', '✓ 記事を生成しました' + (selectedPapers.length ? `（参考文献${selectedPapers.length}件）` : ''));
+
+    const missing = [];
+    if (!parsed.sub)  missing.push('サブタイトル');
+    if (!parsed.lead) missing.push('リード文');
+    if (missing.length) {
+      const statusElem = document.getElementById('wr-gen-status');
+      statusElem.className = 'gh-status err';
+      statusElem.textContent = `⚠ ${missing.join('・')}が生成されませんでした。該当欄に直接入力するか「✦ ブログ記事を生成する」を再度お試しください。`;
+    }
   } catch (e) {
     showGhStatus('wr-gen-status', 'err', 'エラー: ' + e.message);
   }
@@ -1964,7 +1988,9 @@ function sendWrToStep2() {
   const body = document.getElementById('wr-body').textContent;
   document.getElementById('f-title').value = title;
   document.getElementById('f-body').value = body;
-  // サブタイトル・リード文・締めは空でよい（ユーザーが必要なら追記）
+  document.getElementById('f-sub').value     = document.getElementById('wr-sub').textContent || '';
+  document.getElementById('f-lead').value    = document.getElementById('wr-lead').textContent || '';
+  document.getElementById('f-closing').value = document.getElementById('wr-closing').textContent || '';
 
   // Step0で使用した参考文献をStep2の参考文献欄に引き渡す
   const selectedPapers = wrPapers.filter(p => p.selected);
@@ -2114,8 +2140,15 @@ ${topicsBlock}
 
 【文字数】${len}字を目安に、最低${minLen}字以上書くこと。
 
-以下のJSON形式のみで返してください（コードブロックなし）：
-{"title":"タイトル（25字以内）","sub":"サブタイトル（40字以内）","lead":"リード文（100字以内）","body":"本文（各リサーチを段落ごとに展開。出典名を明記。段落区切りは\\n\\nで）","closing":"締め（45字以内）"}`;
+【出力する5つの要素 — すべて必ず内容を入れること（空文字は不可）】
+- title：記事タイトル（25字以内）。リサーチの核心を一言で表す
+- sub：サブタイトル（40字以内）。タイトルを補足し、記事の切り口や視点を伝える一文
+- lead：リード文（100字以内）。記事の冒頭に置く、読者の関心を引く要約文。本文を読みたくなるように書く
+- body：本文（各リサーチを段落ごとに展開。出典名を明記。段落区切りは\\n\\nで）
+- closing：締めの一文（45字以内）
+
+以下のJSON形式のみで返してください（コードブロックなし、すべてのキーに内容を入れること）：
+{"title":"...","sub":"...","lead":"...","body":"...","closing":"..."}`;
   try {
     const raw = await callOpenAI(prompt, 2500);
     const p = JSON.parse(raw);
@@ -2134,7 +2167,16 @@ ${topicsBlock}
     } else {
       fetchNote = `（本文取得失敗 — 要約ベースで生成）`;
     }
-    msg.textContent = `✓ 記事が生成されました ${fetchNote}。参考文献で詳細を確認できます。`;
+    // サブタイトル・リード文が空の場合は警告し、再生成を促す
+    const missing = [];
+    if (!p.sub)  missing.push('サブタイトル');
+    if (!p.lead) missing.push('リード文');
+    if (missing.length) {
+      st.className = 'gst show err';
+      msg.textContent = `⚠ ${missing.join('・')}が生成されませんでした ${fetchNote}。各項目の「書き直し」ボタンで個別に生成できます。`;
+    } else {
+      msg.textContent = `✓ 記事が生成されました ${fetchNote}。参考文献で詳細を確認できます。`;
+    }
     currentVisualSVG = ''; currentVisualIdx = -1; generatedVisuals = [];
     document.getElementById('vis-grid').style.display = 'none';
     document.getElementById('vis-gen-btn').style.display = 'flex';

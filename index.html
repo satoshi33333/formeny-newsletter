@@ -1982,8 +1982,41 @@ ${audience === 'general' ? '読みやすく親しみやすい文体にする' : 
   btn.disabled = false;
 }
 
+// 1件のトピック/論文のURLから本文取得を試みる（generate()とsendWrToStep2()で共用）
+async function fetchTopicContent(t) {
+  if (!t.url) {
+    topicFetchStatus[t.id] = 'no-url';
+    return { ...t, content: null };
+  }
+  try {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(t.url)}`;
+    const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) {
+      topicFetchStatus[t.id] = 'summary';
+      return { ...t, content: null };
+    }
+    const data = await r.json();
+    const rawHtml = data.contents || '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = rawHtml.replace(/<script[\s\S]*?<\/script>/gi, '')
+                           .replace(/<style[\s\S]*?<\/style>/gi, '');
+    const text = tmp.textContent.replace(/\s+/g, ' ').trim();
+    const content = text.substring(0, 2000);
+    if (content.length > 100) {
+      topicFetchStatus[t.id] = 'full';
+      return { ...t, content };
+    } else {
+      topicFetchStatus[t.id] = 'summary';
+      return { ...t, content: null };
+    }
+  } catch(e) {
+    topicFetchStatus[t.id] = 'summary';
+    return { ...t, content: null };
+  }
+}
+
 // Step0の結果をStep2に送って、既存の編集・デザインフローに乗せる
-function sendWrToStep2() {
+async function sendWrToStep2() {
   const title = document.getElementById('wr-title').textContent;
   const body = document.getElementById('wr-body').textContent;
   document.getElementById('f-title').value = title;
@@ -1995,22 +2028,21 @@ function sendWrToStep2() {
   // Step0で使用した参考文献をStep2の参考文献欄に引き渡す
   const selectedPapers = wrPapers.filter(p => p.selected);
   if (selectedPapers.length > 0) {
+    const btn = document.querySelector('#wr-result button[onclick="sendWrToStep2()"]');
+    if (btn) { btn.disabled = true; btn.textContent = '📡 参考文献の本文を確認中...'; }
+
     const baseId = Date.now();
     const newTopicIds = [];
-    selectedPapers.forEach((p, i) => {
-      const id = baseId + i;
-      liveTopics.push({
-        id, title: p.title, src: p.src || '', sum: p.sum || '', lang: '日本語', url: p.url || null
-      });
-      if (p.url) {
-        topicUrls[id] = p.url;
-        topicFetchStatus[id] = 'summary';
-      } else {
-        topicFetchStatus[id] = 'no-url';
-      }
-      newTopicIds.push(id);
-    });
+    const newTopics = selectedPapers.map((p, i) => ({
+      id: baseId + i, title: p.title, src: p.src || '', sum: p.sum || '', lang: '日本語', url: p.url || null
+    }));
+    newTopics.forEach(t => { liveTopics.push(t); if (t.url) topicUrls[t.id] = t.url; newTopicIds.push(t.id); });
+
+    // 実際に元記事へのアクセスを試みて本文取得状況を判定する
+    await Promise.all(newTopics.map(t => fetchTopicContent(t)));
+
     selIds = newTopicIds;
+    if (btn) { btn.disabled = false; btn.textContent = '→ この内容でStep②に進む（編集・デザインを続ける）'; }
   }
 
   goPage(2);

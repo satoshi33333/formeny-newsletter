@@ -316,6 +316,7 @@ a { color: var(--gold); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -467,6 +468,13 @@ a { color: var(--gold); }
             <div class="asec">
               <div class="asec-hd"><span class="asec-lbl">締め</span></div>
               <div class="asec-body" id="wr-closing" contenteditable="true"></div>
+            </div>
+            <div class="asec" id="wr-images-section" style="display:none">
+              <div class="asec-hd"><span class="asec-lbl">資料から抽出した画像</span></div>
+              <div class="asec-body">
+                <div class="pdesc" style="margin-bottom:8px">クリックすると本文の末尾に画像を挿入します（挿入後はクリックで取り消し）</div>
+                <div id="wr-images-grid" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+              </div>
             </div>
             <div class="asec" id="wr-refs-section" style="display:none">
               <div class="asec-hd"><span class="asec-lbl">参考文献</span></div>
@@ -1601,16 +1609,20 @@ let wrPapers = [];        // 検索/手動で見つけた論文 { title, src, ur
 async function handleWrFiles(fileList) {
   const listEl = document.getElementById('wr-file-list');
   for (const file of fileList) {
-    const entry = { name: file.name, type: file.type, status: 'reading' };
+    const entry = { name: file.name, type: file.type, status: 'reading', extractedImages: [] };
     wrFiles.push(entry);
     renderWrFileList();
 
     try {
       if (file.type === 'application/pdf') {
-        entry.textContent = await readPdfText(file);
+        const pdfResult = await readPdfTextAndImages(file);
+        entry.textContent = pdfResult.text;
+        entry.extractedImages = pdfResult.images.map(img => ({ ...img, selected: true }));
         entry.kind = 'pdf';
       } else if (file.name.endsWith('.docx') || file.type.includes('wordprocessingml')) {
         entry.textContent = await readDocxText(file);
+        const docxImages = await readDocxImages(file);
+        entry.extractedImages = docxImages.map(img => ({ ...img, selected: true }));
         entry.kind = 'docx';
       } else if (file.type.startsWith('image/')) {
         entry.imageDataUrl = await readFileAsDataURL(file);
@@ -1646,6 +1658,67 @@ function readPlainText(file) {
   });
 }
 
+// PDF：テキスト抽出＋グラフ等が含まれそうなページを画像化（テキスト量が少ないページ＝図表中心と判定）
+async function readPdfTextAndImages(file) {
+  const buf = await file.arrayBuffer();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+  let text = '';
+  const pageInfos = [];
+  const maxPages = Math.min(pdf.numPages, 20);
+
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(it => it.str).join(' ');
+    text += pageText + '\n';
+    pageInfos.push({ pageNum: i, textLength: pageText.replace(/\s/g, '').length });
+  }
+
+  // テキストが少ないページ＝グラフ・図表中心のページとみなして画像化（最大3枚まで）
+  const avgTextLength = pageInfos.reduce((s, p) => s + p.textLength, 0) / (pageInfos.length || 1);
+  const candidatePages = pageInfos
+    .filter(p => p.textLength < avgTextLength * 0.6 || p.textLength < 200)
+    .slice(0, 3);
+
+  const images = [];
+  for (const { pageNum } of candidatePages) {
+    try {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      images.push({ pageNum, dataUrl: canvas.toDataURL('image/png') });
+    } catch (e) { /* このページの画像化に失敗しても続行 */ }
+  }
+
+  return { text: text.substring(0, 8000), images };
+}
+
+// Word(docx)：内部はZIP形式なので word/media/ フォルダから画像ファイルを直接取り出す
+async function readDocxImages(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const imageFiles = Object.keys(zip.files).filter(name =>
+      name.startsWith('word/media/') && /\.(png|jpe?g|gif)$/i.test(name)
+    );
+    const images = [];
+    for (const name of imageFiles.slice(0, 6)) {
+      const blob = await zip.files[name].async('base64');
+      const ext = name.split('.').pop().toLowerCase();
+      const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+      images.push({ name, dataUrl: `data:${mime};base64,${blob}` });
+    }
+    return images;
+  } catch (e) {
+    return [];
+  }
+}
+
 async function readPdfText(file) {
   const buf = await file.arrayBuffer();
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1674,13 +1747,37 @@ function renderWrFileList() {
       : f.status === 'error' ? `エラー: ${f.error}`
       : '✓ 読み込み完了';
     const statusColor = f.status === 'error' ? '#8B2A1A' : f.status === 'done' ? '#2D5028' : 'var(--stone)';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--white);border:1px solid var(--light);border-radius:6px;font-size:11px">
-      <span>${icon}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
-      <span style="color:${statusColor};font-size:10px;flex-shrink:0">${statusText}</span>
-      <button onclick="removeWrFile(${i})" style="background:none;border:none;color:var(--stone);cursor:pointer;font-size:13px;padding:0 2px">×</button>
+    const imgCount = f.extractedImages?.length || 0;
+    const imgNote = imgCount > 0 ? ` ・画像${imgCount}枚抽出` : '';
+
+    const thumbsHtml = imgCount > 0 ? `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px 4px 10px;background:var(--off);border:1px solid var(--light);border-top:none;border-radius:0 0 6px 6px;margin-top:-1px">
+        ${f.extractedImages.map((img, j) => `
+          <div onclick="toggleWrExtractedImage(${i}, ${j})" style="cursor:pointer;position:relative;width:64px;height:64px;border-radius:5px;overflow:hidden;border:2px solid ${img.selected ? 'var(--gold)' : 'var(--mid)'}">
+            <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+            ${img.selected ? '<div style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:var(--gold);border-radius:50%;color:white;font-size:9px;display:flex;align-items:center;justify-content:center">✓</div>' : ''}
+          </div>
+        `).join('')}
+      </div>
+      <div style="font-size:9px;color:var(--stone);padding:3px 10px 0 10px">クリックして記事に使う画像を選択（${f.extractedImages.filter(im=>im.selected).length}/${imgCount}枚選択中）</div>
+    ` : '';
+
+    return `<div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--white);border:1px solid var(--light);border-radius:${imgCount > 0 ? '6px 6px 0 0' : '6px'};font-size:11px">
+        <span>${icon}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+        <span style="color:${statusColor};font-size:10px;flex-shrink:0">${statusText}${imgNote}</span>
+        <button onclick="removeWrFile(${i})" style="background:none;border:none;color:var(--stone);cursor:pointer;font-size:13px;padding:0 2px">×</button>
+      </div>
+      ${thumbsHtml}
     </div>`;
   }).join('');
+}
+
+function toggleWrExtractedImage(fileIdx, imgIdx) {
+  const img = wrFiles[fileIdx].extractedImages[imgIdx];
+  img.selected = !img.selected;
+  renderWrFileList();
 }
 
 function removeWrFile(idx) {
@@ -1884,7 +1981,10 @@ async function generateWorkshopReport() {
   const selectedPapers = wrPapers.filter(p => p.selected);
 
   const textContents = wrFiles.filter(f => f.textContent).map(f => `【${f.name}】\n${f.textContent}`).join('\n\n');
-  const imageDataUrls = wrFiles.filter(f => f.imageDataUrl).map(f => f.imageDataUrl);
+  // アップロードされた画像ファイル＋PDF/Wordから抽出した画像（選択済みのもの）を集約
+  const uploadedImages = wrFiles.filter(f => f.imageDataUrl).map(f => f.imageDataUrl);
+  const extractedSelectedImages = wrFiles.flatMap(f => (f.extractedImages || []).filter(img => img.selected).map(img => img.dataUrl));
+  const imageDataUrls = [...uploadedImages, ...extractedSelectedImages];
   const papersBlock = selectedPapers.map((p, i) => `【参考文献${i+1}】タイトル：${p.title}／出典：${p.src || '出典不明'}／要約：${p.sum || ''}${p.url ? '／URL：' + p.url : ''}`).join('\n');
 
   showGhStatus('wr-gen-status', 'run', '✦ 記事を生成中...');
@@ -1948,6 +2048,9 @@ ${audience === 'general' ? '読みやすく親しみやすい文体にする' : 
     document.getElementById('wr-closing').textContent = parsed.closing || '';
     document.getElementById('wr-result-empty').style.display = 'none';
     document.getElementById('wr-result').style.display = 'block';
+
+    // 資料から抽出した画像（選択済みのもの）をグリッド表示
+    renderWrImagesGrid();
 
     // 参考文献リストを表示（選択済みのもののみ）
     const refsSection = document.getElementById('wr-refs-section');
@@ -2013,6 +2116,50 @@ async function fetchTopicContent(t) {
     topicFetchStatus[t.id] = 'summary';
     return { ...t, content: null };
   }
+}
+
+// 資料から抽出/アップロードした画像を一覧表示し、クリックで本文末尾に挿入できるようにする
+function renderWrImagesGrid() {
+  const section = document.getElementById('wr-images-section');
+  const grid = document.getElementById('wr-images-grid');
+
+  const uploadedImgs = wrFiles.filter(f => f.imageDataUrl).map((f, idx) => ({ key: 'upload-' + idx, dataUrl: f.imageDataUrl, label: f.name }));
+  const extractedImgs = wrFiles.flatMap((f, fi) => (f.extractedImages || []).filter(im => im.selected).map((im, ii) => ({ key: `extract-${fi}-${ii}`, dataUrl: im.dataUrl, label: f.name + (im.pageNum ? `（p.${im.pageNum}）` : '') })));
+  const allImgs = [...uploadedImgs, ...extractedImgs];
+
+  if (allImgs.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  grid.innerHTML = allImgs.map(img => {
+    const inserted = (window._wrInsertedImages || []).includes(img.key);
+    return `<div onclick="toggleWrImageInsert('${img.key}', '${img.dataUrl.replace(/'/g, "\\'")}')" style="cursor:pointer;width:90px">
+      <div style="position:relative;width:90px;height:70px;border-radius:6px;overflow:hidden;border:2px solid ${inserted ? 'var(--gold)' : 'var(--mid)'}">
+        <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+        ${inserted ? '<div style="position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--gold);border-radius:50%;color:white;font-size:10px;display:flex;align-items:center;justify-content:center">✓</div>' : ''}
+      </div>
+      <div style="font-size:8.5px;color:var(--stone);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${img.label}</div>
+    </div>`;
+  }).join('');
+}
+
+window._wrInsertedImages = [];
+function toggleWrImageInsert(key, dataUrl) {
+  const bodyEl = document.getElementById('wr-body');
+  const marker = `\n\n[画像: ${key}]\n\n`;
+  const idx = window._wrInsertedImages.indexOf(key);
+
+  if (idx === -1) {
+    window._wrInsertedImages.push(key);
+    window._wrImageData = window._wrImageData || {};
+    window._wrImageData[key] = dataUrl;
+    bodyEl.textContent = (bodyEl.textContent || '') + marker;
+  } else {
+    window._wrInsertedImages.splice(idx, 1);
+    bodyEl.textContent = (bodyEl.textContent || '').replace(marker, '').replace(`[画像: ${key}]`, '').replace(/\n{3,}/g, '\n\n');
+  }
+  renderWrImagesGrid();
 }
 
 // Step0の結果をStep2に送って、既存の編集・デザインフローに乗せる
@@ -2749,6 +2896,23 @@ async function adjustPhoto() {
 }
 
 /* ── Override syncPreview to handle photo ── */
+// 本文の1行をレンダリング：[画像: key] 形式ならimgタグに、それ以外は通常のpタグに変換
+// （Step0で挿入した画像マーカーに対応。既存の通常記事には影響しない）
+function wrRenderBodyLine(line, forWordPress) {
+  const imgMatch = line.trim().match(/^\[画像:\s*([\w-]+)\]$/);
+  if (imgMatch) {
+    const key = imgMatch[1];
+    const dataUrl = window._wrImageData?.[key];
+    if (dataUrl) {
+      return `<div style="margin:14px 0;width:100%"><img src="${dataUrl}" alt="資料画像" style="width:100%;display:block;border-radius:4px"></div>`;
+    }
+    return '';
+  }
+  return forWordPress
+    ? `<p style="font-size:14px;line-height:1.88;color:#3A3733;margin-bottom:10px">${line}</p>`
+    : `<p>${line}</p>`;
+}
+
 function syncPreview() {
   const title   = document.getElementById('f-title')?.value   || 'タイトルを入力してください';
   const sub     = document.getElementById('f-sub')?.value     || '';
@@ -2758,7 +2922,7 @@ function syncPreview() {
   const month   = getMonthLabel();
 
   const headerSVG = TPL[currentTpl]?.(currentPal, title, sub, month) || TPL.classic(currentPal, title, sub, month);
-  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => wrRenderBodyLine(l)).join('');
   const tagsHTML  = [...activeTags].map(tag => `<span class="nl-tag">${tag}</span>`).join('');
   // ビジュアル：タブに応じてSVG図解 or 写真を使用
   let visHTML = '';
@@ -2806,7 +2970,7 @@ function buildWP() {
 
   const headerSVG = (TPL[currentTpl]?.(p, title, sub, month) || TPL.classic(p, title, sub, month))
     .replace(/style="display:block;width:100%"/g, 'style="display:block;width:100%;max-width:540px"');
-  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => `<p style="font-size:14px;line-height:1.88;color:#3A3733;margin-bottom:10px">${l}</p>`).join('\n');
+  const bodyHTML  = body.split('\n').filter(l => l.trim()).map(l => wrRenderBodyLine(l, true)).join('\n');
   const tagsHTML  = [...activeTags].map(tag => `<span style="display:inline-block;padding:2px 8px;border:1px solid #C4BFB6;font-size:9px;color:#8A8279;letter-spacing:.07em;text-transform:uppercase;margin:0 4px 4px 0">${tag}</span>`).join('');
   // ビジュアル：タブに応じてSVG or 写真
   let visHTML = '';

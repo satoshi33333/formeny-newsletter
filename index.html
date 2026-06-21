@@ -313,6 +313,37 @@ a { color: var(--gold); }
 .hdr-gear { background: none; border: 1px solid var(--mid); cursor: pointer; color: var(--stone); font-size: 15px; padding: 4px 9px; transition: all .15s; }
 .hdr-gear:hover { border-color: var(--black); color: var(--black); }
 .hdr-gear.configured { border-color: #A8C49A; color: #A8C49A; }
+
+/* 画像編集（クロップ・リサイズ）モーダル */
+.img-edit-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  z-index: 600; align-items: center; justify-content: center; padding: 16px;
+}
+.img-edit-overlay.show { display: flex; }
+.img-edit-modal {
+  background: var(--white); width: 100%; max-width: 520px;
+  border: 1px solid var(--mid); padding: 20px;
+  max-height: 92vh; overflow-y: auto;
+}
+.img-edit-canvas-wrap {
+  position: relative; width: 100%; background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; margin-bottom: 14px; touch-action: none;
+}
+.img-edit-canvas-wrap img { max-width: 100%; max-height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+.img-edit-crop-box {
+  position: absolute; border: 2px solid var(--gold); cursor: move;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.45);
+}
+.img-edit-crop-box .handle {
+  position: absolute; width: 14px; height: 14px; background: var(--gold);
+  border: 1px solid white; border-radius: 50%;
+}
+.img-edit-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.img-edit-row label { font-size: 10px; color: var(--stone); width: 70px; flex-shrink: 0; }
+.img-edit-row input[type="range"] { flex: 1; accent-color: var(--gold); }
+.img-edit-row .val { font-size: 10px; color: var(--ink); width: 40px; text-align: right; flex-shrink: 0; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -329,6 +360,45 @@ a { color: var(--gold); }
 </header>
 
 <!-- GitHub設定モーダル -->
+<!-- 画像編集（クロップ・リサイズ）モーダル -->
+<div class="img-edit-overlay" id="img-edit-overlay" onclick="if(event.target===this)closeImgEditModal()">
+  <div class="img-edit-modal">
+    <div class="gh-modal-title">画像を調整</div>
+    <div class="gh-modal-desc">ドラッグで切り取り範囲を選択し、必要に応じて拡大・縮小・回転できます。</div>
+
+    <div class="img-edit-canvas-wrap" id="img-edit-canvas-wrap" style="height:320px">
+      <img id="img-edit-source" src="" style="transform-origin:center;">
+      <div class="img-edit-crop-box" id="img-edit-crop-box">
+        <div class="handle" id="img-edit-handle-br" style="right:-7px;bottom:-7px;cursor:nwse-resize"></div>
+      </div>
+    </div>
+
+    <div class="img-edit-row">
+      <label>拡大・縮小</label>
+      <input type="range" id="img-edit-zoom" min="50" max="200" value="100" oninput="imgEditUpdateTransform()">
+      <span class="val" id="img-edit-zoom-val">100%</span>
+    </div>
+    <div class="img-edit-row">
+      <label>回転</label>
+      <input type="range" id="img-edit-rotate" min="-180" max="180" value="0" oninput="imgEditUpdateTransform()">
+      <span class="val" id="img-edit-rotate-val">0°</span>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn btn-out btn-sm" onclick="imgEditSetCropRatio(null)">自由</button>
+      <button class="btn btn-out btn-sm" onclick="imgEditSetCropRatio(1)">正方形 1:1</button>
+      <button class="btn btn-out btn-sm" onclick="imgEditSetCropRatio(16/9)">横長 16:9</button>
+      <button class="btn btn-out btn-sm" onclick="imgEditSetCropRatio(4/3)">横長 4:3</button>
+      <button class="btn btn-out btn-sm" onclick="imgEditReset()">リセット</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-blk" style="flex:1" onclick="imgEditApply()">✓ 適用</button>
+      <button class="btn btn-out" onclick="closeImgEditModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div class="gh-modal-overlay" id="gh-modal-overlay" onclick="if(event.target===this)closeGhModal()">
   <div class="gh-modal">
     <div class="gh-modal-title">GitHub 自動デプロイ設定</div>
@@ -1753,13 +1823,16 @@ function renderWrFileList() {
     const thumbsHtml = imgCount > 0 ? `
       <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px 4px 10px;background:var(--off);border:1px solid var(--light);border-top:none;border-radius:0 0 6px 6px;margin-top:-1px">
         ${f.extractedImages.map((img, j) => `
-          <div onclick="toggleWrExtractedImage(${i}, ${j})" style="cursor:pointer;position:relative;width:64px;height:64px;border-radius:5px;overflow:hidden;border:2px solid ${img.selected ? 'var(--gold)' : 'var(--mid)'}">
-            <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
-            ${img.selected ? '<div style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:var(--gold);border-radius:50%;color:white;font-size:9px;display:flex;align-items:center;justify-content:center">✓</div>' : ''}
+          <div style="position:relative;width:64px;height:64px;border-radius:5px;overflow:hidden;border:2px solid ${img.selected ? 'var(--gold)' : 'var(--mid)'}">
+            <div onclick="toggleWrExtractedImage(${i}, ${j})" style="cursor:pointer;width:100%;height:100%">
+              <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+              ${img.selected ? '<div style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:var(--gold);border-radius:50%;color:white;font-size:9px;display:flex;align-items:center;justify-content:center">✓</div>' : ''}
+            </div>
+            <div onclick="event.stopPropagation();openImgEditModal('file-${i}-${j}', '${img.dataUrl.replace(/'/g, "\\'")}')" style="position:absolute;bottom:2px;left:2px;width:16px;height:16px;background:rgba(0,0,0,.65);border-radius:4px;color:white;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer">✎</div>
           </div>
         `).join('')}
       </div>
-      <div style="font-size:9px;color:var(--stone);padding:3px 10px 0 10px">クリックして記事に使う画像を選択（${f.extractedImages.filter(im=>im.selected).length}/${imgCount}枚選択中）</div>
+      <div style="font-size:9px;color:var(--stone);padding:3px 10px 0 10px">クリックして記事に使う画像を選択（${f.extractedImages.filter(im=>im.selected).length}/${imgCount}枚選択中）／ ✎ で調整</div>
     ` : '';
 
     return `<div>
@@ -2133,11 +2206,16 @@ function renderWrImagesGrid() {
   }
   section.style.display = 'block';
   grid.innerHTML = allImgs.map(img => {
+    // 編集済みの画像があればそれを優先表示（_wrImageDataに編集後データが上書きされている場合）
+    const displayUrl = (window._wrInsertedImages || []).includes(img.key) && window._wrImageData?.[img.key]
+      ? window._wrImageData[img.key]
+      : img.dataUrl;
     const inserted = (window._wrInsertedImages || []).includes(img.key);
-    return `<div onclick="toggleWrImageInsert('${img.key}', '${img.dataUrl.replace(/'/g, "\\'")}')" style="cursor:pointer;width:90px">
-      <div style="position:relative;width:90px;height:70px;border-radius:6px;overflow:hidden;border:2px solid ${inserted ? 'var(--gold)' : 'var(--mid)'}">
-        <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+    return `<div style="width:90px">
+      <div onclick="toggleWrImageInsert('${img.key}', '${img.dataUrl.replace(/'/g, "\\'")}')" style="cursor:pointer;position:relative;width:90px;height:70px;border-radius:6px;overflow:hidden;border:2px solid ${inserted ? 'var(--gold)' : 'var(--mid)'}">
+        <img src="${displayUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
         ${inserted ? '<div style="position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--gold);border-radius:50%;color:white;font-size:10px;display:flex;align-items:center;justify-content:center">✓</div>' : ''}
+        <div onclick="event.stopPropagation();openImgEditModal('${img.key}', '${img.dataUrl.replace(/'/g, "\\'")}')" style="position:absolute;bottom:2px;left:2px;width:18px;height:18px;background:rgba(0,0,0,.65);border-radius:4px;color:white;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer">✎</div>
       </div>
       <div style="font-size:8.5px;color:var(--stone);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${img.label}</div>
     </div>`;
@@ -2153,7 +2231,8 @@ function toggleWrImageInsert(key, dataUrl) {
   if (idx === -1) {
     window._wrInsertedImages.push(key);
     window._wrImageData = window._wrImageData || {};
-    window._wrImageData[key] = dataUrl;
+    // 既に編集済みデータがあれば編集後の画像を使う。なければ元データを使う
+    if (!window._wrImageData[key]) window._wrImageData[key] = dataUrl;
     bodyEl.textContent = (bodyEl.textContent || '') + marker;
   } else {
     window._wrInsertedImages.splice(idx, 1);
@@ -3274,6 +3353,250 @@ async function postToWordPress() {
 /* ════════════════════════════════
    GitHub 自動デプロイ
 ════════════════════════════════ */
+/* ════════════════════════════════
+   画像編集（クロップ・リサイズ・回転）モーダル
+════════════════════════════════ */
+let imgEditState = {
+  targetKey: null,       // 編集対象の画像キー（'extract-0-0' 等）または 'file-{fileIdx}-{imgIdx}'
+  zoom: 100,
+  rotate: 0,
+  cropRatio: null,       // null=自由, または数値（幅/高さ）
+  dragging: null,        // 'move' | 'resize' | null
+  dragStart: { x: 0, y: 0 },
+  cropStart: { left: 0, top: 0, width: 0, height: 0 }
+};
+
+function openImgEditModal(key, dataUrl) {
+  imgEditState.targetKey = key;
+  imgEditState.zoom = 100;
+  imgEditState.rotate = 0;
+  imgEditState.cropRatio = null;
+
+  const img = document.getElementById('img-edit-source');
+  img.src = dataUrl;
+  document.getElementById('img-edit-zoom').value = 100;
+  document.getElementById('img-edit-zoom-val').textContent = '100%';
+  document.getElementById('img-edit-rotate').value = 0;
+  document.getElementById('img-edit-rotate-val').textContent = '0°';
+
+  img.onload = () => {
+    imgEditUpdateTransform();
+    imgEditInitCropBox();
+  };
+  document.getElementById('img-edit-overlay').classList.add('show');
+}
+
+function closeImgEditModal() {
+  document.getElementById('img-edit-overlay').classList.remove('show');
+}
+
+function imgEditUpdateTransform() {
+  const zoom = parseInt(document.getElementById('img-edit-zoom').value);
+  const rotate = parseInt(document.getElementById('img-edit-rotate').value);
+  imgEditState.zoom = zoom;
+  imgEditState.rotate = rotate;
+  document.getElementById('img-edit-zoom-val').textContent = zoom + '%';
+  document.getElementById('img-edit-rotate-val').textContent = rotate + '°';
+  const img = document.getElementById('img-edit-source');
+  img.style.transform = `scale(${zoom/100}) rotate(${rotate}deg)`;
+}
+
+function imgEditInitCropBox() {
+  const wrap = document.getElementById('img-edit-canvas-wrap');
+  const box = document.getElementById('img-edit-crop-box');
+  const wrapRect = wrap.getBoundingClientRect();
+  // 初期クロップ範囲：枠の中央80%
+  const w = wrapRect.width * 0.8;
+  const h = wrapRect.height * 0.8;
+  const left = (wrapRect.width - w) / 2;
+  const top = (wrapRect.height - h) / 2;
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+}
+
+function imgEditSetCropRatio(ratio) {
+  imgEditState.cropRatio = ratio;
+  if (ratio === null) return;
+  const box = document.getElementById('img-edit-crop-box');
+  const wrap = document.getElementById('img-edit-canvas-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  let w = parseFloat(box.style.width);
+  let h = w / ratio;
+  if (h > wrapRect.height * 0.9) {
+    h = wrapRect.height * 0.9;
+    w = h * ratio;
+  }
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+}
+
+function imgEditReset() {
+  document.getElementById('img-edit-zoom').value = 100;
+  document.getElementById('img-edit-rotate').value = 0;
+  imgEditUpdateTransform();
+  imgEditState.cropRatio = null;
+  imgEditInitCropBox();
+}
+
+// ── クロップボックスのドラッグ移動・リサイズ ──
+(function setupImgEditDrag() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const box = document.getElementById('img-edit-crop-box');
+    const handle = document.getElementById('img-edit-handle-br');
+    if (!box) return;
+
+    box.addEventListener('mousedown', (e) => {
+      if (e.target === handle) return;
+      imgEditState.dragging = 'move';
+      imgEditState.dragStart = { x: e.clientX, y: e.clientY };
+      imgEditState.cropStart = { left: parseFloat(box.style.left), top: parseFloat(box.style.top), width: parseFloat(box.style.width), height: parseFloat(box.style.height) };
+      e.preventDefault();
+    });
+    handle.addEventListener('mousedown', (e) => {
+      imgEditState.dragging = 'resize';
+      imgEditState.dragStart = { x: e.clientX, y: e.clientY };
+      imgEditState.cropStart = { left: parseFloat(box.style.left), top: parseFloat(box.style.top), width: parseFloat(box.style.width), height: parseFloat(box.style.height) };
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!imgEditState.dragging) return;
+      const wrap = document.getElementById('img-edit-canvas-wrap');
+      const wrapRect = wrap.getBoundingClientRect();
+      const dx = e.clientX - imgEditState.dragStart.x;
+      const dy = e.clientY - imgEditState.dragStart.y;
+
+      if (imgEditState.dragging === 'move') {
+        let newLeft = imgEditState.cropStart.left + dx;
+        let newTop = imgEditState.cropStart.top + dy;
+        newLeft = Math.max(0, Math.min(newLeft, wrapRect.width - imgEditState.cropStart.width));
+        newTop = Math.max(0, Math.min(newTop, wrapRect.height - imgEditState.cropStart.height));
+        box.style.left = newLeft + 'px';
+        box.style.top = newTop + 'px';
+      } else if (imgEditState.dragging === 'resize') {
+        let newWidth = Math.max(30, imgEditState.cropStart.width + dx);
+        let newHeight = imgEditState.cropRatio ? newWidth / imgEditState.cropRatio : Math.max(30, imgEditState.cropStart.height + dy);
+        newWidth = Math.min(newWidth, wrapRect.width - imgEditState.cropStart.left);
+        newHeight = Math.min(newHeight, wrapRect.height - imgEditState.cropStart.top);
+        box.style.width = newWidth + 'px';
+        box.style.height = newHeight + 'px';
+      }
+    });
+    document.addEventListener('mouseup', () => { imgEditState.dragging = null; });
+
+    // タッチ操作対応（モバイル）
+    box.addEventListener('touchstart', (e) => {
+      if (e.target === handle) return;
+      const t = e.touches[0];
+      imgEditState.dragging = 'move';
+      imgEditState.dragStart = { x: t.clientX, y: t.clientY };
+      imgEditState.cropStart = { left: parseFloat(box.style.left), top: parseFloat(box.style.top), width: parseFloat(box.style.width), height: parseFloat(box.style.height) };
+    });
+    handle.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      imgEditState.dragging = 'resize';
+      imgEditState.dragStart = { x: t.clientX, y: t.clientY };
+      imgEditState.cropStart = { left: parseFloat(box.style.left), top: parseFloat(box.style.top), width: parseFloat(box.style.width), height: parseFloat(box.style.height) };
+      e.stopPropagation();
+    });
+    document.addEventListener('touchmove', (e) => {
+      if (!imgEditState.dragging) return;
+      const t = e.touches[0];
+      const wrap = document.getElementById('img-edit-canvas-wrap');
+      const wrapRect = wrap.getBoundingClientRect();
+      const dx = t.clientX - imgEditState.dragStart.x;
+      const dy = t.clientY - imgEditState.dragStart.y;
+      if (imgEditState.dragging === 'move') {
+        let newLeft = Math.max(0, Math.min(imgEditState.cropStart.left + dx, wrapRect.width - imgEditState.cropStart.width));
+        let newTop = Math.max(0, Math.min(imgEditState.cropStart.top + dy, wrapRect.height - imgEditState.cropStart.height));
+        box.style.left = newLeft + 'px';
+        box.style.top = newTop + 'px';
+      } else if (imgEditState.dragging === 'resize') {
+        let newWidth = Math.max(30, imgEditState.cropStart.width + dx);
+        let newHeight = imgEditState.cropRatio ? newWidth / imgEditState.cropRatio : Math.max(30, imgEditState.cropStart.height + dy);
+        box.style.width = newWidth + 'px';
+        box.style.height = newHeight + 'px';
+      }
+    });
+    document.addEventListener('touchend', () => { imgEditState.dragging = null; });
+  });
+})();
+
+// クロップ・ズーム・回転を実際のcanvasに焼き込んで適用する
+function imgEditApply() {
+  const img = document.getElementById('img-edit-source');
+  const wrap = document.getElementById('img-edit-canvas-wrap');
+  const box = document.getElementById('img-edit-crop-box');
+  const wrapRect = wrap.getBoundingClientRect();
+
+  const boxLeft = parseFloat(box.style.left);
+  const boxTop = parseFloat(box.style.top);
+  const boxWidth = parseFloat(box.style.width);
+  const boxHeight = parseFloat(box.style.height);
+
+  const zoom = imgEditState.zoom / 100;
+  const rotateRad = imgEditState.rotate * Math.PI / 180;
+
+  // 出力解像度：元画像の解像度を保てるよう、自然サイズと表示サイズの比率から決める
+  // img.getBoundingClientRect()はtransform(scale)適用後の見た目サイズを返すため、
+  // ズームを再度掛けず「素のサイズ」=見た目サイズ/zoom を基準にする
+  const imgRectNow = img.getBoundingClientRect();
+  const baseDisplayWidth = imgRectNow.width / zoom;
+  const renderScale = Math.max(2, img.naturalWidth / baseDisplayWidth);
+
+  const midCanvas = document.createElement('canvas');
+  midCanvas.width = Math.round(wrapRect.width * renderScale);
+  midCanvas.height = Math.round(wrapRect.height * renderScale);
+  const mctx = midCanvas.getContext('2d');
+  mctx.fillStyle = '#1a1a1a';
+  mctx.fillRect(0, 0, midCanvas.width, midCanvas.height);
+
+  mctx.save();
+  mctx.translate(midCanvas.width / 2, midCanvas.height / 2);
+  mctx.rotate(rotateRad);
+  mctx.scale(zoom, zoom);
+  const drawW = baseDisplayWidth * renderScale;
+  const drawH = drawW * (img.naturalHeight / img.naturalWidth);
+  mctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  mctx.restore();
+
+  // クロップ範囲を切り出す
+  const cropX = boxLeft * renderScale;
+  const cropY = boxTop * renderScale;
+  const cropW = boxWidth * renderScale;
+  const cropH = boxHeight * renderScale;
+
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = Math.max(1, Math.round(cropW));
+  finalCanvas.height = Math.max(1, Math.round(cropH));
+  const fctx = finalCanvas.getContext('2d');
+  fctx.drawImage(midCanvas, cropX, cropY, cropW, cropH, 0, 0, finalCanvas.width, finalCanvas.height);
+
+  const resultDataUrl = finalCanvas.toDataURL('image/jpeg', 0.92);
+
+  // 編集結果を反映：抽出画像リスト or アップロード画像 or 挿入済みデータを更新
+  const key = imgEditState.targetKey;
+  const fileMatch = key.match(/^file-(\d+)-(\d+)$/);
+  if (fileMatch) {
+    const [, fi, ii] = fileMatch.map(Number);
+    if (wrFiles[fi]?.extractedImages?.[ii]) {
+      wrFiles[fi].extractedImages[ii].dataUrl = resultDataUrl;
+    }
+    renderWrFileList();
+  } else {
+    // Step0の画像グリッド（extract-*, upload-*）の編集結果を保存
+    window._wrImageData = window._wrImageData || {};
+    window._wrImageData[key] = resultDataUrl;
+    // 既に本文に挿入済みなら、本文中の表示画像も更新されるようrenderWrImagesGridで反映
+    renderWrImagesGrid();
+  }
+
+  closeImgEditModal();
+}
+
 function openGhModal() {
   // GitHub設定を読み込む
   document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
